@@ -5,7 +5,15 @@ export function DiscoveryFilters({
   showAge = true,
 }: {
   action: string;
-  values: { chain?: string; minLiquidity?: string; maxAgeHours?: string; sort?: string; q?: string };
+  values: {
+    chain?: string;
+    minLiquidity?: string;
+    maxAgeHours?: string;
+    minScore?: string;
+    risk?: string;
+    sort?: string;
+    q?: string;
+  };
   showAge?: boolean;
 }) {
   const field = "rounded border border-border-strong bg-panel-2 px-2 py-1 text-[13px] outline-none focus:border-accent";
@@ -29,6 +37,19 @@ export function DiscoveryFilters({
         Min liquidity (USD)
         <input name="minLiquidity" type="number" min={0} step={1000} defaultValue={values.minLiquidity} className={`${field} mt-0.5 block w-32`} />
       </label>
+      <label className="text-[11px] text-fg-dim">
+        Min score
+        <input name="minScore" type="number" min={0} max={100} step={5} defaultValue={values.minScore} className={`${field} mt-0.5 block w-20`} />
+      </label>
+      <label className="text-[11px] text-fg-dim">
+        Security
+        <select name="risk" defaultValue={values.risk ?? "all"} className={`${field} mt-0.5 block`}>
+          <option value="all">All</option>
+          <option value="hide_excluded">Hide excluded</option>
+          <option value="assessed_clean">Assessed: low/medium only</option>
+          <option value="excluded">Excluded only</option>
+        </select>
+      </label>
       {showAge ? (
         <label className="text-[11px] text-fg-dim">
           Seen within
@@ -47,6 +68,7 @@ export function DiscoveryFilters({
           <option value="newest">Newest</option>
           <option value="liquidity">Liquidity</option>
           <option value="volume">Volume 24h</option>
+          <option value="score">Score</option>
         </select>
       </label>
       <button className="rounded border border-border-strong bg-panel-2 px-3 py-1 text-[13px] hover:border-accent">Apply</button>
@@ -65,9 +87,24 @@ export function num(v: string | string[] | undefined): number | undefined {
   return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
-export function sortParam(v: string | string[] | undefined): "newest" | "liquidity" | "volume" {
+export function sortParam(v: string | string[] | undefined): "newest" | "liquidity" | "volume" | "score" {
   const s = str(v);
-  return s === "liquidity" || s === "volume" ? s : "newest";
+  return s === "liquidity" || s === "volume" || s === "score" ? s : "newest";
+}
+
+export function riskParam(v: string | string[] | undefined): "all" | "hide_excluded" | "assessed_clean" | "excluded" {
+  const s = str(v);
+  return s === "hide_excluded" || s === "assessed_clean" || s === "excluded" ? s : "all";
+}
+
+/** Serialise the current search params for saved views (allowlisted again server-side). */
+export function toQuery(sp: Record<string, string | string[] | undefined>): string {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(sp)) {
+    const s = str(v);
+    if (s) u.set(k, s);
+  }
+  return u.toString();
 }
 
 export function chainParam(v: string | string[] | undefined): string | undefined {

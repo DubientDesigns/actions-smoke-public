@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ChainBadge, Freshness } from "@/components/data-display";
+import { RiskBadge, ScoreBadge } from "@/components/security";
 import { Badge } from "@/components/ui/badge";
 import { Empty, Table, Td, Th, Tr } from "@/components/ui/table";
 import { formatAge, formatInt, formatPct, formatPrice, formatUsd, shortAddress, toNum } from "@/lib/format";
 import type { TokenOverview } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function TokenTable({ rows, empty }: { rows: TokenOverview[]; empty: string }) {
+export function TokenTable({ rows, empty, now }: { rows: TokenOverview[]; empty: string; now: Date }) {
   if (rows.length === 0) return <Empty>{empty}</Empty>;
   return (
     <Table>
@@ -14,6 +15,8 @@ export function TokenTable({ rows, empty }: { rows: TokenOverview[]; empty: stri
         <tr>
           <Th>Token</Th>
           <Th>Chain</Th>
+          <Th className="text-right" title="Research-priority score (heuristic, 0–100)">Score</Th>
+          <Th>Risk</Th>
           <Th className="text-right">Price</Th>
           <Th className="text-right">Liquidity</Th>
           <Th className="text-right">Vol 1h</Th>
@@ -39,6 +42,14 @@ export function TokenTable({ rows, empty }: { rows: TokenOverview[]; empty: stri
                 {t.pool_count > 1 ? <Badge className="ml-1">{t.pool_count} pools</Badge> : null}
               </Td>
               <Td><ChainBadge chain={t.chain} /></Td>
+              <Td className="text-right"><ScoreBadge total={t.score_total} /></Td>
+              <Td>
+                <RiskBadge
+                  level={t.risk_level}
+                  excluded={t.hard_excluded}
+                  stale={t.security_valid_until ? new Date(t.security_valid_until) < now : false}
+                />
+              </Td>
               <Td className="num text-right">{formatPrice(t.price_usd)}</Td>
               <Td className="num text-right">{formatUsd(t.liquidity_usd)}</Td>
               <Td className="num text-right">{formatUsd(t.volume_h1_usd)}</Td>

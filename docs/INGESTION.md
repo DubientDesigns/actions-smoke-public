@@ -13,7 +13,8 @@ live in `data_sources` and can be changed without a deploy.
 | `check_sources` | 5 min | — (database) | 0 | 0 | — |
 | `apply_retention` | 03:15 SGT | — | 0 | 0 | — |
 | `daily_health_report` | 08:00 SGT | — (Telegram from Phase 5) | 0 | 0 | — |
-| *Phase 3* `assess_security` | 10 min | GoPlus `token_security` | new tokens ≥ liquidity filter only | ~150–400 (est.) | limiter 20/min, cap 5,000/day |
+| `assess_security` | 10 min | GoPlus `token_security` (1 address/call) | ≤ 25 (never-assessed first, then stale, deepest liquidity first) | ~150–400 typ., ≤ 3,600 max | limiter 20/min, cap 5,000/day |
+| `score_tokens` | 15 min | — (database) | 0 | 0 | stores a row only on material change |
 | *Phase 5* AI reports | hourly batch | Claude Messages / Batches | only after deterministic filters | ≤ 20 requests/day default | hard caps in `ai.budget` |
 
 **Tracked set.** A token is refreshed while it is ≤ 14 days old and its best

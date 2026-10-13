@@ -35,7 +35,70 @@ export type TokenOverview = {
   fdv_usd: N;
   market_observed_at: string | null;
   market_source: string | null;
+  risk_level: RiskLevel | null;
+  hard_excluded: boolean | null;
+  needs_review: boolean | null;
+  security_coverage: string | null;
+  security_assessed_at: string | null;
+  security_valid_until: string | null;
+  score_total: N;
+  scored_at: string | null;
+  scoring_version: string | null;
+  score_risk_flags: string[] | null;
 };
+
+export type RiskLevel = "critical" | "high" | "medium" | "low" | "unknown";
+export type CheckStatus = "pass" | "warn" | "risk" | "unknown" | "unsupported";
+
+export type SecurityCheck = {
+  key: string;
+  label: string;
+  status: CheckStatus;
+  value: unknown;
+  detail: string | null;
+  source: string;
+};
+
+export type SecurityLatest = {
+  assessment_id: number;
+  token_id: number;
+  chain: string;
+  address: string;
+  symbol: string | null;
+  name: string | null;
+  assessed_at: string;
+  valid_until: string;
+  is_stale: boolean;
+  coverage: string;
+  risk_level: RiskLevel;
+  hard_excluded: boolean;
+  needs_review: boolean;
+  checks: SecurityCheck[];
+  risk_flags: string[];
+  is_honeypot: boolean | null;
+  buy_tax_pct: N;
+  sell_tax_pct: N;
+  top10_holder_pct: N;
+  ruleset_version: string;
+  source: string;
+};
+
+export type ScoreComponent = { score: number; max: number; evidence: string[]; missing: string[] };
+
+export type ScoreLatest = {
+  score_id: number;
+  token_id: number;
+  scoring_version: string;
+  scored_at: string;
+  data_cutoff_at: string;
+  total: N;
+  components: Record<string, ScoreComponent>;
+  missing_data: string[];
+  risk_flags: string[];
+  inputs_hash: string;
+};
+
+export type SavedView = { id: number; page: string; name: string; params: Record<string, string> };
 
 export type PoolDetail = {
   pool_id: number;
