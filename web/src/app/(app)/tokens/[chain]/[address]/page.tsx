@@ -12,6 +12,7 @@ import { getToken, isOwner, listResearch } from "@/lib/data";
 import { requestResearch } from "@/lib/actions/research";
 import { FormError, FormNotice } from "@/components/form";
 import { PriorityBadge, StatusPill } from "@/components/research";
+import { PaperBuyCard } from "@/components/paper";
 import { str } from "@/components/filters";
 import Link from "next/link";
 import { formatDuration, formatInt, formatPct, formatPrice, formatSgt, formatUsd, toNum } from "@/lib/format";
@@ -176,6 +177,7 @@ async function TokenDetail({
           )}
         </CardBody>
       </Card>
+      {owner ? <PaperBuyCard tokenId={t.token_id} back={here} /> : null}
       <Card className="mt-4">
         <CardHeader title="Security checks" subtitle="GoPlus heuristics — not an audit. Unknown ≠ pass." />
         <CardBody>

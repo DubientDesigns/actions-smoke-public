@@ -62,11 +62,12 @@
 - [x] AI Research Reports page + report detail with evidence; Alerts page; spend panel; request-report button
 
 ## Phase 6 — Paper portfolio and forward performance
-- [ ] Order service (internal API) applying execution delay, fees, constant-product slippage, liquidity cap
-- [ ] Manual and rule-based entries; strategy versions immutable; every evaluation recorded
-- [ ] Partial exits, stop-loss / take-profit simulation, untradeable marking, presale vesting
-- [ ] Equity marks with liquidity haircut; drawdown, win rate, profit factor, MAE/MFE
-- [ ] Reproducibility test: re-running an evaluation from stored inputs yields identical decisions
+- [x] Order service (internal API) applying execution delay, fees, constant-product slippage, liquidity cap
+- [x] Manual and rule-based entries; strategy versions immutable (trigger); evaluations append-only (trigger), incl. rejected and missed
+- [x] Partial exits, stop-loss / take-profit / max-hold simulation, untradeable marking, presale vesting (locked = zero value)
+- [x] Equity marks at liquidation value; drawdown, win rate, profit factor, MAE/MFE, slippage, fill/miss counts
+- [x] Reproducibility test: re-running an evaluation from stored inputs yields identical decisions and hashes
+- [x] Paper Portfolio and Historical Performance pages; paper buy on token pages, allocation on open presales
 
 ## Phase 7 — Testing, deployment, monitoring
 - [ ] Provision VPS; firewall (22 restricted, 80/443 only); unattended upgrades

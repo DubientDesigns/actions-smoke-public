@@ -1,7 +1,7 @@
 "use client";
 
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { formatPrice, formatSgt, formatUsd } from "@/lib/format";
+import { formatPct, formatPrice, formatSgt, formatUsd } from "@/lib/format";
 
 export type Point = { t: number; v: number };
 
@@ -10,11 +10,11 @@ export type Point = { t: number; v: number };
  * shown as separate charts, never on a dual axis). Gaps in observation are
  * not interpolated over silently: points are plotted at their observed time.
  */
-export function SeriesChart({ points, kind, label }: { points: Point[]; kind: "price" | "usd"; label: string }) {
+export function SeriesChart({ points, kind, label }: { points: Point[]; kind: "price" | "usd" | "pct"; label: string }) {
   if (points.length < 2) {
     return <div className="flex h-48 items-center justify-center text-xs text-fg-dim">Not enough observations yet for {label.toLowerCase()}.</div>;
   }
-  const fmt = kind === "price" ? formatPrice : (v: number) => formatUsd(v);
+  const fmt = kind === "price" ? formatPrice : kind === "pct" ? (v: number) => formatPct(v) : (v: number) => formatUsd(v);
   return (
     <div className="h-48 w-full" role="img" aria-label={`${label} over time`}>
       <ResponsiveContainer>

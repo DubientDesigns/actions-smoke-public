@@ -3,6 +3,13 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type {
   AlertRow,
+  EquityMark,
+  PaperOrder,
+  PaperPerformance,
+  PaperPortfolio,
+  PaperPosition,
+  StrategyDefinition,
+  StrategyEvaluation,
   EvidenceItem,
   ReportContent,
   ResearchRow,
@@ -318,4 +325,51 @@ export async function getSetting<T>(key: string): Promise<T | null> {
   const supabase = await createClient();
   const row = check(await supabase.from("app_settings").select("value").eq("key", key).maybeSingle()) as { value: T } | null;
   return row?.value ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Paper trading (RLS: strategy portfolios are visible to app users; manual
+// portfolios only to their owner).
+// ---------------------------------------------------------------------------
+
+export async function listPaperPortfolios(): Promise<PaperPortfolio[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_paper_portfolio_summary").select("*").order("id"));
+}
+
+export async function getPaperPortfolio(id: number) {
+  const supabase = await createClient();
+  const [positions, orders, marks] = await Promise.all([
+    supabase.from("v_paper_positions").select("*").eq("portfolio_id", id).order("opened_at", { ascending: false, nullsFirst: false }).limit(300),
+    supabase.from("v_paper_orders").select("*").eq("portfolio_id", id).order("created_at", { ascending: false }).limit(200),
+    supabase.from("paper_equity_marks").select("*").eq("portfolio_id", id).order("marked_at").limit(5000),
+  ]);
+  return {
+    positions: check(positions) as PaperPosition[],
+    orders: check(orders) as PaperOrder[],
+    marks: check(marks) as EquityMark[],
+  };
+}
+
+export async function listPaperPerformance(): Promise<PaperPerformance[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_paper_performance").select("*").order("portfolio_id"));
+}
+
+export async function listEquityMarks(portfolioId: number): Promise<EquityMark[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("paper_equity_marks").select("*").eq("portfolio_id", portfolioId).order("marked_at").limit(5000));
+}
+
+export async function listStrategies(): Promise<StrategyDefinition[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("strategy_definitions").select("*").order("slug").order("version", { ascending: false }));
+}
+
+export async function listEvaluations(f: { strategyId?: number; decision?: string } = {}): Promise<StrategyEvaluation[]> {
+  const supabase = await createClient();
+  let q = supabase.from("v_strategy_evaluations").select("*");
+  if (f.strategyId) q = q.eq("strategy_id", f.strategyId);
+  if (f.decision) q = q.eq("decision", f.decision);
+  return check(await q.order("evaluated_at", { ascending: false }).limit(200));
 }
