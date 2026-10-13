@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     alchemy_api_key: SecretStr | None = None
     helius_api_key: SecretStr | None = None
 
+    # Public dashboard URL, used to turn app paths in alerts into links (e.g. https://cit.example.com).
+    public_url: str | None = None
+
     # Scheduler master switch (lets the API container run without jobs).
     scheduler_enabled: bool = True
 

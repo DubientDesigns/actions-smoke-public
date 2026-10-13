@@ -303,6 +303,7 @@ name = "cit"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "anthropic" },
     { name = "apscheduler" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -312,11 +313,6 @@ dependencies = [
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "structlog" },
     { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-ai = [
-    { name = "anthropic" },
 ]
 
 [package.dev-dependencies]
@@ -331,7 +327,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", marker = "extra == 'ai'", specifier = ">=0.40" },
+    { name = "anthropic", specifier = ">=0.40" },
     { name = "apscheduler", specifier = ">=3.10,<4" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
@@ -342,7 +338,6 @@ requires-dist = [
     { name = "structlog", specifier = ">=24.1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
-provides-extras = ["ai"]
 
 [package.metadata.requires-dev]
 dev = [

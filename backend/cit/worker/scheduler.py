@@ -13,7 +13,10 @@ Schedule (see docs/INGESTION.md for the rate-limit budget):
   sync_wallets             every 15 min   Alchemy/Helius 1-3 calls per tracked wallet (skipped without keys)
   check_sources            every 5 min    database only
   apply_retention          daily 03:15 SGT
-  daily_health_report      daily 08:00 SGT
+  daily_health_report      daily 08:00 SGT  digest of deferred alerts + health report (Telegram)
+  generate_alerts          every 10 min   database only
+  dispatch_alerts          every 1 min    Telegram Bot   <=12 messages/hour (quiet hours 23:00-07:30 SGT)
+  generate_research_reports hourly        Claude API     <=5/run, hard daily/monthly caps
 State lives in Postgres, so a restarted worker simply resumes the schedule.
 """
 
@@ -59,6 +62,9 @@ def build_scheduler(rt: ProviderRuntime) -> AsyncIOScheduler:
     add("update_mention_outcomes", IntervalTrigger(minutes=30), 480)
     add("score_presales", IntervalTrigger(minutes=30), 90)
     add("sync_wallets", IntervalTrigger(minutes=15), 540)
+    add("generate_alerts", IntervalTrigger(minutes=10), 150)
+    add("dispatch_alerts", IntervalTrigger(minutes=1), 170)
+    add("generate_research_reports", CronTrigger(minute=20), None)
     add("check_sources", IntervalTrigger(minutes=5), 60)
     add("apply_retention", CronTrigger(hour=3, minute=15, timezone=DISPLAY_TZ))
     add("daily_health_report", CronTrigger(hour=8, minute=0, timezone=DISPLAY_TZ))
