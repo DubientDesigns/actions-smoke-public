@@ -2,7 +2,7 @@
 FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy \
     CIT_DB_DIR=/app/db
-COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /usr/local/bin/uv
+RUN pip install --no-cache-dir "uv>=0.5,<1"
 WORKDIR /app/backend
 
 COPY backend/pyproject.toml backend/uv.lock ./
