@@ -19,7 +19,9 @@ live docs before relying on a number, and run `scripts/capture_fixtures.sh` +
 | Alchemy `alchemy_getAssetTransfers` | `providers/alchemy.py` | **No** — documented shape only |
 | Helius enhanced transactions | `providers/helius.py` | **No** — documented shape only |
 | DEX Screener `latest/dex/tokens` (mention resolution) | `services/social.py` | **No** |
-| RugCheck, Claude | not yet built | — |
+| Claude Messages API (official `anthropic` Python SDK 1.x, structured outputs) | `ai/research.py` | **No** — tested with an injected fake caller; real call needs your API key |
+| Telegram `sendMessage` (alerts) | `providers/telegram.py`, `alerts/dispatch.py` | **No** — mocked |
+| RugCheck | not built | — |
 
 ## GeckoTerminal (primary discovery)
 

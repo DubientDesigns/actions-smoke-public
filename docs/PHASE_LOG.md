@@ -1,5 +1,53 @@
 # Phase log
 
+## Phase 5 — 2026-10-13
+
+Operator-approved defaults: Claude Haiku 5.5, hard cap US$10/month, ≤ 20 reports/day;
+quiet hours 23:00–07:30 SGT with high/critical still sent; 08:00 SGT digest.
+
+### Tests run
+* Backend **111 passed**; ruff clean. New: Claude pricing (incl. Haiku long-prompt
+  card); report validation (accepts cited numbers within rounding, rejects
+  fabricated numbers, numbers only present in untrusted text, unknown evidence ids,
+  claims without evidence, invalid enums); budget gate (request/token/monthly caps);
+  research job with an injected fake caller (complete + metered cost recorded in
+  `api_usage`, rejected on fabrication, refusal recorded, budget blocks *before*
+  calling, queued owner request processed first, skipped without key/when disabled,
+  no regeneration without material change); internal API request endpoint (401 without
+  token, queue, dedupe, 404); alert dedup/cooldown and digest-only severities; all
+  generators; spend thresholds incl. fixed costs; quiet hours across midnight;
+  dispatch ordering, hourly cap with critical exemption, HTML escaping of untrusted
+  titles, app links, retries → failed, deferral still applied while the provider fails;
+  daily digest; chunking.
+* Web: lint, typecheck, 14 Vitest tests, `next build`.
+* CLI: migration 0006; `generate_alerts` produced a real outage alert (GoPlus is
+  blocked here); delivery, digest and AI skipped cleanly without keys.
+
+### Failures found and fixed
+* Dispatcher stopped the whole round after one failed send, leaving alerts that only
+  needed deferring stuck in `pending` → deferral continues; sending pauses until next round.
+* Report content was bound as text into a `jsonb` column → explicit cast.
+* `daily_digest_time` setting was never honoured → removed; digest is fixed at 08:00 SGT
+  (documented) rather than offering a setting that does nothing.
+
+### Limitations (honest)
+1. **Claude and Telegram delivery are untested against the live APIs** (no keys here);
+   the Claude call uses the official SDK per its documentation.
+2. The fabricated-number check is a heuristic: it compares numbers in the prose with
+   numbers in the evidence (2% tolerance, small vocabulary numbers allowed). It can
+   reject a correct report that rephrases a figure (e.g. a computed ratio) — such
+   reports are kept as `rejected_schema` with the reason, never shown as findings.
+3. Reports cover tokens only; presale reports are not generated yet.
+4. The Batch API is not used; at ~20 reports/day the saving would be cents.
+5. Alert thresholds are heuristics; tune `app_settings.alerts` after a week of data.
+
+### Next: Phase 6 — paper portfolio and forward performance
+Order service with execution delay, fees, constant-product slippage and liquidity caps
+(DB look-ahead guard already enforced); manual and rule-based entries with every
+evaluation recorded; partial exits, stop-loss/take-profit, untradeable marking, presale
+vesting; equity curve, drawdown, win rate, profit factor, MAE/MFE; paper-rule alerts.
+
+
 ## Phase 4 — 2026-10-13
 
 ### Tests run

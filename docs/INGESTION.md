@@ -20,7 +20,10 @@ live in `data_sources` and can be changed without a deploy.
 | `update_mention_outcomes` | 30 min | — (database) | 0 | 0 | — |
 | `score_presales` | 30 min | — (database) | 0 | 0 | stores only when inputs change |
 | `sync_wallets` | 15 min | Alchemy `alchemy_getAssetTransfers` (2/EVM wallet) · Helius (1/Solana wallet) | 1–3 per wallet | 20 wallets ≈ 4,000 | 30/min per source; free-tier credits ample for tens of wallets |
-| *Phase 5* AI reports | hourly batch | Claude Messages / Batches | only after deterministic filters | ≤ 20 requests/day default | hard caps in `ai.budget` |
+| `generate_alerts` | 10 min | — (database) | 0 | 0 | dedup + cooldowns per alert key |
+| `dispatch_alerts` | 1 min | Telegram Bot `sendMessage` | ≤ 12/hour (critical exempt) | ≤ ~300 | quiet hours 23:00–07:30 SGT |
+| `daily_health_report` | 08:00 SGT | Telegram Bot `sendMessage` | 1–2 | 1–2 | digest + health report |
+| `generate_research_reports` | hourly (:20) | Claude Messages API (`claude-haiku-5-5`) | ≤ 5 | ≤ 20 (cap) | daily request/token caps, US$10/month hard cap |
 
 **Tracked set.** A token is refreshed while it is ≤ 14 days old and its best
 pool has ≥ US$2,000 liquidity (or is unknown yet), or it is on any watchlist,
