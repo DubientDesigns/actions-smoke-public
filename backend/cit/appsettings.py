@@ -69,8 +69,13 @@ class AlertSettings(BaseModel):
 
 
 class RetentionSettings(BaseModel):
-    raw_snapshot_days: int = Field(7, ge=1)
-    hourly_snapshot_days: int = Field(90, ge=7)
+    """Sized for the Supabase free tier (500 MB); see docs/COSTS.md."""
+
+    raw_snapshot_days: int = Field(3, ge=1)
+    hourly_snapshot_days: int = Field(30, ge=7)
+    # Tokens that never reached the tracking liquidity threshold and are not
+    # referenced by any research record are deleted after this many days.
+    prune_untracked_token_days: int = Field(14, ge=3)
     api_usage_days: int = Field(120, ge=31)
     ingestion_run_days: int = Field(60, ge=7)
 

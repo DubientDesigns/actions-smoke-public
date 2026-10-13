@@ -1,0 +1,15 @@
+# Only the Next.js app is public. The internal API and worker are never routed.
+{$CIT_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+	# Basic abuse protection for the login endpoint is handled by Supabase Auth
+	# rate limits; Caddy just proxies.
+	reverse_proxy web:3000
+}

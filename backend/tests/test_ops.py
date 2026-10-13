@@ -50,3 +50,38 @@ async def test_health_report_builds(engine, clean_db):
     assert {c["chain"] for c in report["chains"]} == {"bsc", "ethereum", "solana", "base"}
     text = ops.format_health_report_text(report)
     assert "CIT daily health" in text and "SGT" in text
+
+
+async def test_health_report_is_not_ok_before_any_success(engine, clean_db):
+    async with engine.connect() as conn:
+        report = await ops.build_health_report(conn)
+    assert report["overall"] == "degraded"
+    clean_db.execute("update data_sources set last_success_at = now() where enabled")
+    async with engine.connect() as conn:
+        assert (await ops.build_health_report(conn))["overall"] == "ok"
+    clean_db.execute("update data_sources set last_success_at = null, last_failure_at = now(), last_error = 'x' "
+                     "where slug = 'geckoterminal'")
+    async with engine.connect() as conn:
+        assert (await ops.build_health_report(conn))["overall"] == "down"
+
+
+async def test_prune_removes_only_unreferenced_illiquid_old_tokens(engine, clean_db):
+    def token(addr, days_old):
+        return clean_db.execute(
+            "insert into tokens (chain_id, address, first_observed_at) "
+            "values (1, %s, now() - make_interval(days => %s))"
+            " returning id", (addr, days_old)).fetchone()[0]
+
+    junk, liquid, fresh, evaluated = token("0xa1", 20), token("0xa2", 20), token("0xa3", 1), token("0xa4", 20)
+    pool = clean_db.execute("insert into pools (chain_id, address, base_token_id) values (1, '0xp2', %s) returning id",
+                            (liquid,)).fetchone()[0]
+    clean_db.execute("insert into pool_latest (pool_id, token_id, source_id, observed_at, liquidity_usd) "
+                     "values (%s, %s, 1, now(), 50000)", (pool, liquid))
+    strat = clean_db.execute("insert into strategy_definitions (slug, version, name, rules) "
+                             "values ('s', 1, 's', '{}') returning id").fetchone()[0]
+    clean_db.execute("insert into strategy_evaluations (strategy_id, token_id, data_cutoff_at, decision, inputs, "
+                     "inputs_hash) values (%s, %s, now(), 'reject', '{}', 'h')", (strat, evaluated))
+    res = await ops.apply_retention(engine)
+    assert res["pruned_tokens"] == 1
+    left = {r[0] for r in clean_db.execute("select id from tokens").fetchall()}
+    assert left == {liquid, fresh, evaluated} and junk not in left

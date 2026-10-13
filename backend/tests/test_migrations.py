@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 
 import psycopg
@@ -62,7 +63,7 @@ def test_token_uniqueness_per_chain(clean_db):
 
 def _as_user(conn, user_id: uuid.UUID | None, role: str = "authenticated"):
     conn.execute(f"set role {role}")
-    claims = '{"sub": "%s"}' % user_id if user_id else ""
+    claims = json.dumps({"sub": str(user_id)}) if user_id else ""
     conn.execute("select set_config('request.jwt.claims', %s, false)", (claims,))
 
 
@@ -131,3 +132,15 @@ def test_opportunity_score_requires_matching_target(clean_db):
         clean_db.execute(
             "insert into opportunity_scores (scorecard, scoring_version, data_cutoff_at, total, components, "
             "inputs_hash) values ('token', 'v1', now(), 50, '{}', 'h')")
+
+
+def test_dashboard_views_respect_rls(migrated_db, clean_db):
+    clean_db.execute("insert into tokens (chain_id, address, symbol) values (1, '0x01', 'AAA')")
+    member = uuid.uuid4()
+    clean_db.execute("insert into app_users (user_id, email) values (%s, 'm@example.com')", (member,))
+    with psycopg.connect(to_psycopg_dsn(migrated_db), autocommit=True) as c:
+        _as_user(c, uuid.uuid4())
+        assert c.execute("select count(*) from v_token_overview").fetchone()[0] == 0
+        c.execute("reset role")
+        _as_user(c, member)
+        assert c.execute("select count(*) from v_token_overview").fetchone()[0] == 1

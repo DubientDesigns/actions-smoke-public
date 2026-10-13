@@ -52,6 +52,27 @@ async def check_sources(engine: AsyncEngine) -> dict[str, str]:
     return out
 
 
+# Deletes low-signal tokens to stay inside the free database tier. Anything
+# referenced by research, scoring, strategy evaluation, paper trading, social
+# mentions, watchlists or presales is never pruned, so rejected and failed
+# opportunities stay on record (no survivorship bias).
+_PRUNE_TOKENS = text("""
+delete from tokens t
+where not t.is_quote_asset
+  and t.first_observed_at < now() - make_interval(days => :days)
+  and coalesce((select max(liquidity_usd) from pool_latest pl where pl.token_id = t.id), 0) < :min_liq
+  and not exists (select 1 from watchlist_items x where x.token_id = t.id)
+  and not exists (select 1 from strategy_evaluations x where x.token_id = t.id)
+  and not exists (select 1 from paper_positions x where x.token_id = t.id)
+  and not exists (select 1 from paper_orders x where x.token_id = t.id)
+  and not exists (select 1 from social_mentions x where x.token_id = t.id)
+  and not exists (select 1 from opportunity_scores x where x.token_id = t.id)
+  and not exists (select 1 from research_reports x where x.token_id = t.id)
+  and not exists (select 1 from presales x where x.token_id = t.id)
+  and not exists (select 1 from pools p where p.quote_token_id = t.id)
+""")
+
+
 async def apply_retention(engine: AsyncEngine) -> dict[str, int]:
     async with engine.begin() as conn:
         cfg = await appsettings.load(conn, "retention", appsettings.RetentionSettings)
@@ -94,6 +115,13 @@ async def apply_retention(engine: AsyncEngine) -> dict[str, int]:
                 {"cut": hourly_cut},
             )
         ).rowcount
+        disc = await appsettings.load(conn, "discovery", appsettings.DiscoverySettings)
+        pruned_tokens = (
+            await conn.execute(
+                _PRUNE_TOKENS,
+                {"days": cfg.prune_untracked_token_days, "min_liq": disc.track_min_liquidity_usd},
+            )
+        ).rowcount
         deleted_usage = (
             await conn.execute(
                 text("delete from api_usage where occurred_at < now() - make_interval(days => :d)"),
@@ -113,15 +141,24 @@ async def apply_retention(engine: AsyncEngine) -> dict[str, int]:
         "deleted_hourly": deleted_hourly,
         "deleted_api_usage": deleted_usage,
         "deleted_runs": deleted_runs,
+        "pruned_tokens": pruned_tokens,
     }
 
 
 async def build_health_report(conn: AsyncConnection) -> dict[str, Any]:
     now = datetime.now(UTC)
     sources = []
-    for r in (await conn.execute(text("select * from data_sources order by id"))).all():
+    for r in (await conn.execute(text("select * from data_sources where kind <> 'manual' order by id"))).all():
         status, msg = source_status(r, now)
-        sources.append({"slug": r.slug, "status": status, "message": msg, "last_success_at": r.last_success_at})
+        sources.append(
+            {
+                "slug": r.slug,
+                "enabled": r.enabled,
+                "status": status,
+                "message": msg,
+                "last_success_at": r.last_success_at,
+            }
+        )
     chains = [
         dict(r._mapping)
         for r in (
@@ -200,12 +237,14 @@ async def build_health_report(conn: AsyncConnection) -> dict[str, Any]:
         .one()
         ._mapping
     )
+    # Only enabled sources count. An enabled source that has never succeeded is
+    # "unknown", which must not read as healthy: it degrades the overall status.
+    enabled = [s["status"] for s in sources if s["enabled"]]
+    comp = [c["status"] for c in components]
     overall = "ok"
-    if any(s["status"] == "down" for s in sources if s["status"] != "unknown") or any(
-        c["status"] == "down" for c in components
-    ):
+    if "down" in enabled or "down" in comp:
         overall = "down"
-    elif any(s["status"] == "degraded" for s in sources) or any(c["status"] == "degraded" for c in components):
+    elif "degraded" in enabled or "unknown" in enabled or "degraded" in comp:
         overall = "degraded"
     return {
         "generated_at": now,
