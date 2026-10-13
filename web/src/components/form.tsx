@@ -47,3 +47,8 @@ export function FormPanel({ title, children }: { title: string; children: React.
     </details>
   );
 }
+
+export function FormNotice({ notice }: { notice?: string }) {
+  if (!notice) return null;
+  return <div className="mb-3 rounded border border-ok/40 bg-ok/10 px-3 py-2 text-[13px] text-ok">{notice}</div>;
+}

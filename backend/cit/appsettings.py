@@ -96,22 +96,38 @@ class ScoringWeights(BaseModel):
 
 
 class AiBudget(BaseModel):
-    enabled: bool = False
+    """AI research reports. Also requires CIT_ANTHROPIC_API_KEY and data_sources 'anthropic' enabled."""
+
+    enabled: bool = True
     model: str = "claude-haiku-5-5"
+    effort: Literal["low", "medium", "high"] = "medium"
+    max_output_tokens: int = Field(8000, ge=1000, le=32000)
     daily_request_cap: int = Field(20, ge=0)
-    daily_token_cap: int = Field(200_000, ge=0)
+    daily_token_cap: int = Field(300_000, ge=0)
     monthly_usd_cap: float = Field(10.0, ge=0)
-    use_batch_api: bool = True
+    # Only tokens at or above this research-priority score get automatic reports.
+    min_score: float = Field(55, ge=0, le=100)
+    min_hours_between_reports: int = Field(12, ge=1)
+    max_reports_per_run: int = Field(5, ge=0, le=50)
 
 
 class AlertSettings(BaseModel):
-    enabled: bool = False
+    """Telegram delivery also needs CIT_TELEGRAM_BOT_TOKEN and CIT_TELEGRAM_ALERT_CHAT_ID."""
+
+    enabled: bool = True
     quiet_hours_start: str = "23:00"  # Asia/Singapore
     quiet_hours_end: str = "07:30"
     quiet_hours_min_severity: Literal["info", "low", "medium", "high", "critical"] = "high"
     default_cooldown_minutes: int = 360
-    daily_digest_time: str = "08:00"
+    # The daily digest (deferred alerts + health report) is sent at 08:00 SGT.
     max_alerts_per_hour: int = 12
+    # Generator thresholds
+    new_token_min_score: float = Field(55, ge=0, le=100)
+    liquidity_drop_pct: float = Field(50, gt=0, le=100)
+    liquidity_rise_pct: float = Field(200, gt=0)
+    wallet_min_value_usd: float = Field(5000, ge=0)
+    presale_lead_hours: int = Field(24, ge=1, le=168)
+    multi_mention_min_clusters: int = Field(2, ge=2)
 
 
 class RetentionSettings(BaseModel):
@@ -128,6 +144,8 @@ class RetentionSettings(BaseModel):
 
 class BudgetSettings(BaseModel):
     monthly_budget_sgd: float = 60.0
+    # Fixed costs not visible to the app (VPS, domain, Supabase plan), added to metered API spend.
+    fixed_monthly_costs_sgd: float = Field(0.0, ge=0)
     sgd_per_usd: float = 1.30  # operator-maintained reference rate
     alert_thresholds_pct: list[int] = [50, 80, 100]
 

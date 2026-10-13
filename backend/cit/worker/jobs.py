@@ -6,6 +6,8 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from cit.ai import research
+from cit.alerts import dispatch, engine
 from cit.log import get_logger
 from cit.services import discovery, ops, presales, runs, scoring, security, social, wallets
 from cit.services.runtime import ProviderRuntime
@@ -13,20 +15,6 @@ from cit.services.runtime import ProviderRuntime
 log = get_logger(__name__)
 
 JobFn = Callable[[ProviderRuntime], Awaitable[Any]]
-
-
-async def _health_report(rt: ProviderRuntime) -> dict[str, Any]:
-    async with rt.engine.begin() as conn:
-        report = await ops.build_health_report(conn)
-        await runs.heartbeat(
-            conn,
-            "daily_health_report",
-            "ok",
-            f"overall={report['overall']}",
-            {"text": ops.format_health_report_text(report)},
-        )
-    log.info("daily_health_report", text=ops.format_health_report_text(report))
-    return {"overall": report["overall"]}
 
 
 JOBS: dict[str, JobFn] = {
@@ -42,7 +30,11 @@ JOBS: dict[str, JobFn] = {
     "sync_wallets": wallets.sync_wallets,
     "check_sources": lambda rt: ops.check_sources(rt.engine),
     "apply_retention": lambda rt: ops.apply_retention(rt.engine),
-    "daily_health_report": _health_report,
+    "generate_alerts": lambda rt: engine.generate_alerts(rt.engine),
+    "dispatch_alerts": dispatch.dispatch_alerts,
+    "generate_research_reports": research.generate_research_reports,
+    # Daily digest: deferred alerts + the operational health report (stored even without Telegram).
+    "daily_health_report": dispatch.send_daily_digest,
 }
 
 

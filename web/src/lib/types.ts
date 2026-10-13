@@ -334,3 +334,58 @@ export type WalletEvent = {
   counterparty: string | null;
   source: string;
 };
+
+export type ResearchRow = {
+  id: number;
+  token_id: number | null;
+  chain: string | null;
+  address: string | null;
+  symbol: string | null;
+  name: string | null;
+  status: string;
+  prompt_version: string;
+  model: string | null;
+  research_priority: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cost_usd: N;
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type ReportClaim = { statement: string; evidence_ids: string[] };
+export type ReportSection = { assessment: string; evidence_ids: string[]; confidence: string };
+export type ReportContent = {
+  executive_summary: string;
+  project_description: string;
+  evidence_for: ReportClaim[];
+  evidence_against: ReportClaim[];
+  tokenomics: ReportSection;
+  contract_risks: ReportSection;
+  liquidity_risks: ReportSection;
+  community_quality: ReportSection;
+  insider_concentration: ReportSection;
+  catalysts: ReportSection;
+  unknowns: string[];
+  research_priority: string;
+  priority_rationale: string;
+};
+export type EvidenceItem = { id: string; kind: string; source: string | null; observed_at: string | null } & Record<string, unknown>;
+
+export type AlertRow = {
+  id: number;
+  category: string;
+  severity: "info" | "low" | "medium" | "high" | "critical";
+  title: string;
+  body: string;
+  token_id: number | null;
+  presale_id: number | null;
+  created_at: string;
+  status: string;
+  status_reason: string | null;
+  attempts: number;
+  sent_at: string | null;
+};
+
+export type SpendRow = { source: string; month: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: N };

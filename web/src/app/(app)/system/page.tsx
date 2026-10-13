@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { TableSkeleton } from "@/components/ui/skeleton";
 import { Empty, Table, Td, Th, Tr } from "@/components/ui/table";
-import { listHealth, listJobFreshness, listSources, listUsage } from "@/lib/data";
+import { getSetting, listHealth, listJobFreshness, listSources, listSpend, listUsage } from "@/lib/data";
 import { formatInt, formatSgt, toNum } from "@/lib/format";
 import { CHAIN_LABEL } from "@/lib/nav";
 
@@ -28,7 +28,20 @@ export default function SystemPage() {
 }
 
 async function SystemContent() {
-  const [sources, jobs, health, usage] = await Promise.all([listSources(), listJobFreshness(), listHealth(), listUsage(7)]);
+  const [sources, jobs, health, usage, spend, budget] = await Promise.all([
+    listSources(),
+    listJobFreshness(),
+    listHealth(),
+    listUsage(7),
+    listSpend(),
+    getSetting<{ monthly_budget_sgd?: number; fixed_monthly_costs_sgd?: number; sgd_per_usd?: number }>("budget"),
+  ]);
+  const month = new Date().toISOString().slice(0, 7);
+  const monthRows = spend.filter((r) => r.month.slice(0, 7) === month);
+  const meteredUsd = monthRows.reduce((a, r) => a + (toNum(r.cost_usd) ?? 0), 0);
+  const fx = budget?.sgd_per_usd ?? 1.3;
+  const fixed = budget?.fixed_monthly_costs_sgd ?? 0;
+  const totalSgd = fixed + meteredUsd * fx;
   const report = health.find((h) => h.component === "daily_health_report");
   const components = health.filter((h) => !h.component.startsWith("source:") && h.component !== "daily_health_report");
   const today = new Date().toISOString().slice(0, 10);
@@ -118,6 +131,34 @@ async function SystemContent() {
           ) : <Empty>No report generated yet.</Empty>}
         </Card>
       </div>
+
+      <Card>
+        <CardHeader
+          title="Spend this month"
+          subtitle={`Fixed costs are entered in Settings → budget; metered API cost converted at ${fx} SGD/USD.`}
+        />
+        <div className="grid gap-px bg-border sm:grid-cols-4">
+          <div className="bg-panel px-4 py-3"><div className="text-[11px] uppercase tracking-wider text-fg-dim">Total</div><div className="num text-lg">S${totalSgd.toFixed(2)}</div></div>
+          <div className="bg-panel px-4 py-3"><div className="text-[11px] uppercase tracking-wider text-fg-dim">Budget</div><div className="num text-lg">S${(budget?.monthly_budget_sgd ?? 60).toFixed(2)}</div></div>
+          <div className="bg-panel px-4 py-3"><div className="text-[11px] uppercase tracking-wider text-fg-dim">Fixed (VPS etc.)</div><div className="num text-lg">S${fixed.toFixed(2)}</div></div>
+          <div className="bg-panel px-4 py-3"><div className="text-[11px] uppercase tracking-wider text-fg-dim">Metered API</div><div className="num text-lg">US${meteredUsd.toFixed(4)}</div></div>
+        </div>
+        {monthRows.length ? (
+          <Table>
+            <thead><tr><Th>Source</Th><Th className="text-right">Calls</Th><Th className="text-right">Tokens in/out</Th><Th className="text-right">Cost (US$)</Th></tr></thead>
+            <tbody>
+              {monthRows.map((r) => (
+                <Tr key={r.source}>
+                  <Td>{r.source}</Td>
+                  <Td className="num text-right">{formatInt(r.calls)}</Td>
+                  <Td className="num text-right">{formatInt(r.input_tokens)} / {formatInt(r.output_tokens)}</Td>
+                  <Td className="num text-right">${(toNum(r.cost_usd) ?? 0).toFixed(4)}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        ) : null}
+      </Card>
 
       <Card>
         <CardHeader title="API usage, last 7 days" subtitle="Metered cost is zero for free tiers; AI spend appears here from Phase 5." />

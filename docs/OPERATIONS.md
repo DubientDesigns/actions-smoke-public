@@ -79,6 +79,31 @@ scraping and AI use of platform data; adding one requires an explicit decision.
 4. Alchemy BNB Chain support on the free tier is unverified; if `bnb-mainnet`
    calls fail, BNB wallets show a sync error while other chains keep working.
 
+### Telegram alerts (Phase 5)
+1. Set up the bot as above (`CIT_TELEGRAM_BOT_TOKEN`, source enabled).
+2. Find your chat id: send any message to the bot from your Telegram account (or add it to a
+   private group). Within ~2 minutes the chat appears under *Influencer Intelligence → Chats
+   waiting for approval*; the number shown is the chat id. Click **Ignore** (so the chat is not
+   treated as a research source) and put the id in `CIT_TELEGRAM_ALERT_CHAT_ID`.
+3. Optional: `CIT_PUBLIC_URL=https://your-domain` turns token/presale paths in alerts into links.
+4. Restart the worker. Medium+ alerts are sent immediately (max 12/hour); low/info alerts and
+   anything during quiet hours (23:00–07:30 SGT, except high/critical) go into the 08:00 SGT
+   digest together with the daily health report. Thresholds live in `app_settings.alerts`.
+
+### AI research reports (Phase 5)
+1. Create a Claude API key in the Anthropic Console and set `CIT_ANTHROPIC_API_KEY`.
+   (If your Claude Max plan includes monthly API credits, link the Console organisation to use
+   them; credits do not cover Claude Code usage.)
+2. Enable: `update data_sources set enabled = true where slug = 'anthropic';`
+3. Defaults (`app_settings.ai.budget`): model `claude-haiku-5-5`, effort `medium`, ≤ 5 reports
+   per hourly run, ≤ 20 requests/day, ≤ 300K tokens/day, **hard cap US$10/month**. Each call is
+   checked against the caps with a worst-case cost estimate *before* it is made.
+4. Reports are generated automatically for tokens with score ≥ 55 that are security-assessed and
+   not excluded, at most once per 12 h per token and only when the evidence changed materially.
+   Owners can also click **Request report** on a token page (queued via the internal API).
+5. Set `fixed_monthly_costs_sgd` in `app_settings.budget` (e.g. your VPS price) so spend alerts
+   at 50/80/100 % of the S$60 budget include fixed costs.
+
 ## 4. Backups and restore
 
 The `backup` service writes `backups/cit-<UTC>.dump` nightly (03:00 SGT) and

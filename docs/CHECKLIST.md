@@ -52,11 +52,14 @@
 - [ ] Presale deadline alerts (Phase 5, Telegram)
 
 ## Phase 5 — AI reports, Telegram alerts, cost controls
-- [ ] Evidence bundle builder with provenance ids; untrusted-text isolation
-- [ ] Claude structured outputs + schema validation; cache by input hash; Batch API
-- [ ] Budget gate (daily requests/tokens, monthly USD) checked before every call; spend in `api_usage`
-- [ ] Telegram alerts: dedup, severity, quiet hours, cooldowns, hourly cap, daily digest, outage + spend alerts
-- [ ] Daily health report delivered via Telegram
+- [x] Evidence bundle builder with provenance ids; untrusted-text isolation
+- [~] Claude structured outputs (official SDK) + schema validation + evidence-id and fabricated-number checks; material-change hash; live API untested
+- [ ] Batch API — not used (cost already ~US$1–2/month; synchronous calls keep the pipeline simple)
+- [x] Budget gate (daily requests/tokens, monthly USD, worst-case estimate) checked before every call; spend metered in `api_usage`
+- [x] Alerts: new tokens, multi-source mentions, liquidity change, wallet activity, contract risk, presale deadlines, outages, spend thresholds; dedup + cooldowns
+- [~] Telegram delivery: severity, quiet hours, hourly cap, retries, HTML escaping, daily digest — live Bot API untested
+- [x] Daily health report delivered in the digest (and stored even without Telegram)
+- [x] AI Research Reports page + report detail with evidence; Alerts page; spend panel; request-report button
 
 ## Phase 6 — Paper portfolio and forward performance
 - [ ] Order service (internal API) applying execution delay, fees, constant-product slippage, liquidity cap

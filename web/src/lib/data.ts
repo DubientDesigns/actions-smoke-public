@@ -2,6 +2,11 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import type {
+  AlertRow,
+  EvidenceItem,
+  ReportContent,
+  ResearchRow,
+  SpendRow,
   Channel,
   ChatRequest,
   CoordinationSignal,
@@ -272,4 +277,45 @@ export async function listWallets(): Promise<WalletOverview[]> {
 export async function listWalletEvents(limit = 100): Promise<WalletEvent[]> {
   const supabase = await createClient();
   return check(await supabase.from("v_wallet_events").select("*").order("block_time", { ascending: false }).limit(limit));
+}
+
+export async function listResearch(f: { status?: string; priority?: string; tokenId?: number } = {}): Promise<ResearchRow[]> {
+  const supabase = await createClient();
+  let q = supabase.from("v_research_reports").select("*");
+  if (f.status) q = q.eq("status", f.status);
+  if (f.priority) q = q.eq("research_priority", f.priority);
+  if (f.tokenId) q = q.eq("token_id", f.tokenId);
+  return check(await q.order("created_at", { ascending: false }).limit(200));
+}
+
+export async function getResearch(id: number) {
+  const supabase = await createClient();
+  const row = check(await supabase.from("v_research_reports").select("*").eq("id", id).maybeSingle()) as ResearchRow | null;
+  if (!row) return null;
+  const full = check(
+    await supabase.from("research_reports").select("content, evidence, input_hash").eq("id", id).single(),
+  ) as { content: ReportContent | null; evidence: { evidence?: EvidenceItem[] } | null; input_hash: string };
+  return { row, content: full.content, evidence: full.evidence?.evidence ?? [] };
+}
+
+export async function listAlerts(f: { category?: string; severity?: string; status?: string } = {}): Promise<AlertRow[]> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("alerts")
+    .select("id, category, severity, title, body, token_id, presale_id, created_at, status, status_reason, attempts, sent_at");
+  if (f.category) q = q.eq("category", f.category);
+  if (f.severity) q = q.eq("severity", f.severity);
+  if (f.status) q = q.eq("status", f.status);
+  return check(await q.order("created_at", { ascending: false }).limit(200));
+}
+
+export async function listSpend(): Promise<SpendRow[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_spend_month").select("*").order("month", { ascending: false }));
+}
+
+export async function getSetting<T>(key: string): Promise<T | null> {
+  const supabase = await createClient();
+  const row = check(await supabase.from("app_settings").select("value").eq("key", key).maybeSingle()) as { value: T } | null;
+  return row?.value ?? null;
 }

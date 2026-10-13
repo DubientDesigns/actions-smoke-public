@@ -8,7 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, Td, Th, Tr } from "@/components/ui/table";
-import { getToken } from "@/lib/data";
+import { getToken, isOwner, listResearch } from "@/lib/data";
+import { requestResearch } from "@/lib/actions/research";
+import { FormError, FormNotice } from "@/components/form";
+import { PriorityBadge, StatusPill } from "@/components/research";
+import { str } from "@/components/filters";
+import Link from "next/link";
 import { formatDuration, formatInt, formatPct, formatPrice, formatSgt, formatUsd, toNum } from "@/lib/format";
 import { EXPLORER } from "@/lib/nav";
 import type { Snapshot } from "@/lib/types";
@@ -17,7 +22,7 @@ export default function TokenPage(props: PageProps<"/tokens/[chain]/[address]">)
   return (
     <Suspense fallback={<Skeleton className="h-96 w-full" />}>
       <Guarded>
-        <TokenDetail params={props.params} />
+        <TokenDetail params={props.params} searchParams={props.searchParams} />
       </Guarded>
     </Suspense>
   );
@@ -30,12 +35,20 @@ function series(snaps: Snapshot[], poolId: number | null, key: "price_usd" | "li
     .filter((p): p is Point => p.v !== null);
 }
 
-async function TokenDetail({ params }: { params: PageProps<"/tokens/[chain]/[address]">["params"] }) {
-  const { chain, address } = await params;
+async function TokenDetail({
+  params,
+  searchParams,
+}: {
+  params: PageProps<"/tokens/[chain]/[address]">["params"];
+  searchParams: PageProps<"/tokens/[chain]/[address]">["searchParams"];
+}) {
+  const [{ chain, address }, sp] = await Promise.all([params, searchParams]);
   if (!EXPLORER[chain]) notFound();
   const data = await getToken(chain, decodeURIComponent(address));
   if (!data) notFound();
   const { token: t, pools, snapshots, security, score } = data;
+  const [reports, owner] = await Promise.all([listResearch({ tokenId: t.token_id }), isOwner()]);
+  const here = `/tokens/${chain}/${address}`;
   return (
     <>
       <PageHeader
@@ -49,6 +62,8 @@ async function TokenDetail({ params }: { params: PageProps<"/tokens/[chain]/[add
           </div>
         }
       />
+      <FormError error={str(sp.error)} />
+      <FormNotice notice={str(sp.notice)} />
       {t.is_excluded ? <Notice title="Excluded">{t.exclusion_reason ?? "Excluded by a hard rule."}</Notice> : null}
       <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Stat label="Price" value={formatPrice(t.price_usd)} sub={<Freshness at={t.market_observed_at} source={t.market_source} />} />
@@ -130,6 +145,37 @@ async function TokenDetail({ params }: { params: PageProps<"/tokens/[chain]/[add
           </CardBody>
         </Card>
       </div>
+      <Card className="mt-4">
+        <CardHeader
+          title="AI research"
+          subtitle="Generated only from this page's evidence; claims cite evidence ids."
+          right={
+            owner ? (
+              <form action={requestResearch}>
+                <input type="hidden" name="token_id" value={t.token_id} />
+                <input type="hidden" name="back" value={here} />
+                <button className="rounded border border-accent/60 px-2 py-0.5 text-xs text-accent hover:bg-accent/10">Request report</button>
+              </form>
+            ) : null
+          }
+        />
+        <CardBody className="text-[13px]">
+          {reports.length === 0 ? (
+            <p className="text-fg-muted">No report yet. Reports are generated automatically for tokens above the score threshold, within the AI budget.</p>
+          ) : (
+            <ul className="space-y-1">
+              {reports.slice(0, 5).map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center gap-2">
+                  <Link href={`/research/${r.id}`} className="text-accent hover:underline">Report #{r.id}</Link>
+                  <StatusPill s={r.status} />
+                  <PriorityBadge p={r.research_priority} />
+                  <span className="text-xs text-fg-dim">{formatSgt(r.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardBody>
+      </Card>
       <Card className="mt-4">
         <CardHeader title="Security checks" subtitle="GoPlus heuristics — not an audit. Unknown ≠ pass." />
         <CardBody>
