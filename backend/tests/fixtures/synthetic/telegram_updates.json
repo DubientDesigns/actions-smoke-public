@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "result": [
+    {"update_id": 1001, "channel_post": {"message_id": 55, "date": 1791878400,
+      "chat": {"id": -1001111111111, "type": "channel", "title": "Alpha Calls", "username": "alphacalls"},
+      "text": "New gem, early entry 🚀 CA: 0x2222222222222222222222222222222222222222 $FOO",
+      "entities": [{"type": "text_link", "offset": 0, "length": 3, "url": "https://dexscreener.com/bsc/0x2222222222222222222222222222222222222222"}]}},
+    {"update_id": 1002, "message": {"message_id": 7, "date": 1791878460,
+      "chat": {"id": -1002222222222, "type": "supergroup", "title": "Unregistered Group"},
+      "from": {"id": 42, "first_name": "Private", "is_bot": false},
+      "text": "secret chat text 0x3333333333333333333333333333333333333333"}},
+    {"update_id": 1003, "channel_post": {"message_id": 56, "date": 1791878520,
+      "chat": {"id": -1001111111111, "type": "channel", "title": "Alpha Calls", "username": "alphacalls"},
+      "text": "gm everyone, nice weather today"}},
+    {"update_id": 1004, "channel_post": {"message_id": 57, "date": 1791878580,
+      "chat": {"id": -1001111111111, "type": "channel", "title": "Alpha Calls", "username": "alphacalls"},
+      "forward_origin": {"type": "user", "sender_user": {"id": 9, "first_name": "Someone"}, "date": 1791878000},
+      "caption": "#ad sponsored: join https://launch.example/sale?ref=xyz $BAR"}},
+    {"update_id": 1005, "edited_channel_post": {"message_id": 55, "date": 1791878400,
+      "chat": {"id": -1001111111111, "type": "channel"}, "text": "edited"}}
+  ]
+}

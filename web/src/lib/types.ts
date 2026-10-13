@@ -181,3 +181,156 @@ export type UsageDaily = {
   failed_calls: number;
   cost_usd: N;
 };
+
+export type Presale = {
+  id: number;
+  project_name: string;
+  slug: string;
+  official_website: string | null;
+  chain_id: number | null;
+  platform: string | null;
+  platform_url: string | null;
+  sale_type: string;
+  status: string;
+  sale_start_at: string | null;
+  sale_end_at: string | null;
+  tge_at: string | null;
+  sale_price_usd: N;
+  claimed_valuation_usd: N;
+  min_investment_usd: N;
+  hard_cap_usd: N;
+  vesting_terms: Record<string, unknown> | null;
+  lockup_terms: string | null;
+  audit_claims: string[];
+  team_info: string | null;
+  verification_status: string;
+  source_urls: string[];
+  notes: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PresaleClaim = {
+  id: number;
+  field: string;
+  value: unknown;
+  source_url: string | null;
+  source_kind: string;
+  observed_at: string;
+  verification: string;
+};
+
+export type PresaleScore = Omit<ScoreLatest, "token_id" | "inputs_hash"> & { presale_id: number };
+
+export type InfluencerStats = {
+  influencer_id: number;
+  display_name: string;
+  coordination_group: string | null;
+  mentions: number;
+  projects: number;
+  first_mention_at: string | null;
+  last_mention_at: string | null;
+  disclosed_promos: number;
+  with_24h: number;
+  avg_return_24h_pct: N;
+  avg_return_7d_pct: N;
+  median_return_7d_pct: N;
+  avg_max_gain_pct: N;
+  avg_max_drawdown_pct: N;
+  failed: number;
+  no_price: number;
+  exit_infeasible: number;
+};
+
+export type MentionDetail = {
+  id: number;
+  published_at: string;
+  origin: string;
+  category: string;
+  promo_disclosure: string;
+  is_forwarded: boolean;
+  forwarded_from: string | null;
+  referral_links: string[];
+  text_excerpt: string | null;
+  source_url: string | null;
+  contract_address: string | null;
+  mentioned_symbols: string[];
+  project_name: string | null;
+  token_id: number | null;
+  chain: string | null;
+  channel_id: number;
+  platform: string;
+  channel_handle: string | null;
+  channel_title: string | null;
+  influencer_name: string | null;
+  cluster: string;
+  token_symbol: string | null;
+  token_address: string | null;
+  token_chain: string | null;
+  first_price_usd: N;
+  price_24h_usd: N;
+  price_7d_usd: N;
+  max_gain_pct: N;
+  max_drawdown_pct: N;
+  exit_feasible: boolean | null;
+  outcome_status: string | null;
+};
+
+export type CoordinationSignal = { signal: string; subject: string; first_at: string; clusters: string[] };
+
+export type Channel = {
+  id: number;
+  platform: string;
+  external_id: string;
+  handle: string | null;
+  title: string | null;
+  url: string | null;
+  influencer_id: number | null;
+  access_basis: string;
+  is_official_project: boolean;
+  enabled: boolean;
+  last_collected_at: string | null;
+};
+
+export type ChatRequest = {
+  id: number;
+  external_id: string;
+  title: string | null;
+  chat_type: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  messages_seen: number;
+  status: string;
+};
+
+export type WalletOverview = {
+  id: number;
+  chain: string;
+  address: string;
+  label: string;
+  category: string;
+  enabled: boolean;
+  notes: string | null;
+  last_synced_at: string | null;
+  last_sync_error: string | null;
+  events_7d: number;
+  last_event_at: string | null;
+};
+
+export type WalletEvent = {
+  id: number;
+  wallet_id: number;
+  wallet_label: string;
+  chain: string;
+  tx_hash: string;
+  block_time: string;
+  event_type: string;
+  token_id: number | null;
+  token: string | null;
+  token_address: string | null;
+  amount: N;
+  value_usd: N;
+  counterparty: string | null;
+  source: string;
+};

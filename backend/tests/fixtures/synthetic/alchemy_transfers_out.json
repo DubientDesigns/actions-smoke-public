@@ -1,0 +1,6 @@
+{"jsonrpc": "2.0", "id": 1, "result": {"transfers": [
+  {"blockNum": "0x1312d00", "uniqueId": "0xaaa1:log:12", "hash": "0xAAA1", "from": "0x9999999999999999999999999999999999999999",
+   "to": "0x5555555555555555555555555555555555555555", "value": 1500.5, "asset": "FOO", "category": "erc20",
+   "rawContract": {"value": "0x1", "address": "0x2222222222222222222222222222222222222222", "decimal": "0x12"},
+   "metadata": {"blockTimestamp": "2026-10-13T10:00:00.000Z"}}
+]}}

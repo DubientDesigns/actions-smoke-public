@@ -1,5 +1,54 @@
 # Phase log
 
+## Phase 4 — 2026-10-13
+
+### Tests run
+* Backend **91 passed**; ruff clean. New: extraction (contracts, 32-byte
+  Solana check, chain from URLs, no false positives from unrelated URLs,
+  referrals, disclosure, categories, prompt-injection text treated as data);
+  Telegram collection end to end (registered chats only, unregistered chats
+  recorded as metadata only, chatter discarded, forwarding users hidden,
+  offset advanced, idempotent, bot token redacted from errors, skipped
+  without token); mention resolution via DEX Screener; outcomes ignore
+  pre-publication prices and keep no-price results; independent-mention
+  counting (clusters, forwards, identical text); coordination signals;
+  presale scorecard and job; Alchemy/Helius parsers and wallet sync end to end
+  (lookback, cursors, dedup, USD valuation, skipped without keys); RLS for
+  owner curation and worker-private state; HTTP POST + secret redaction.
+* Web: lint, typecheck, **14 Vitest tests** (adds input validation: SGT→UTC,
+  URL schemes, per-chain address checks), `next build`.
+* CLI: all new jobs ran against Postgres and skipped cleanly without keys.
+
+### Failures found and fixed
+* POSTing to an empty path produced `…/v2/KEY/` (trailing slash) → URL join fixed.
+* An unreviewed presale earned points for "not flagged" → now unknown until reviewed.
+* Untyped NULL parameters in wallet SQL failed in Postgres → explicit casts.
+* Provider clients were cached by name, so all Alchemy networks would have
+  shared one host → cached by name + base URL.
+* Server-action error handling would have swallowed framework redirects →
+  `unstable_rethrow`.
+
+### Limitations (honest)
+1. Telegram Bot API, Alchemy and Helius are **untested against live
+   responses** (no keys/egress here). Follow docs/OPERATIONS.md §3a.
+2. Social coverage is limited to chats the bot is added to plus manual
+   entries. X/Twitter and YouTube collection are not built (paid APIs).
+3. Wallet events are transfers; buy/sell is inferred only for Helius SWAP
+   transactions. EVM swaps appear as transfer in/out.
+4. Mention outcomes use the token's current deepest pool and our snapshot
+   cadence (15 min, downsampled to hourly after 3 days), so intrahour peaks
+   can be missed; max gain is therefore conservative.
+5. "Exit feasible" uses a fixed reference position (US$1,000 at ≤2% of pool
+   liquidity), a heuristic not an execution model (Phase 6 adds slippage).
+6. Presale data is manual; there is no automated presale feed.
+
+### Next: Phase 5 — AI reports, Telegram alerts, cost controls
+Evidence bundles with provenance, Claude structured outputs with schema
+validation and budget gates (needs your API key + budget confirmation),
+Telegram alerts with dedup/severity/quiet hours/cooldowns/digest, outage and
+spend-threshold alerts, daily health report delivery.
+
+
 ## Phase 3 — 2026-10-13
 
 ### Tests run

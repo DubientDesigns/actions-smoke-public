@@ -39,7 +39,7 @@ export const NAV: NavItem[] = [
   { href: "/settings", label: "Settings", icon: Settings, phase: 2 },
 ];
 
-export const CURRENT_PHASE = 3;
+export const CURRENT_PHASE = 4;
 
 export const CHAIN_LABEL: Record<string, string> = {
   bsc: "BNB",

@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from cit.config import Settings
-from cit.providers import dexscreener, geckoterminal, goplus
+from cit.providers import dexscreener, geckoterminal, goplus, telegram
 from cit.providers.http import ApiCall, ProviderClient, ProviderPolicy, TokenBucket
 from cit.services import runs
 
@@ -33,7 +33,10 @@ class ProviderRuntime:
         self._usage.append(call)
 
     async def client(self, pol: ProviderPolicy) -> ProviderClient:
-        c = self._clients.get(pol.name)
+        # Keyed by name AND base URL: one provider can have several endpoints
+        # (e.g. Alchemy has one host per network), each with its own limiter.
+        key = f"{pol.name}|{pol.base_url}"
+        c = self._clients.get(key)
         if c is None:
             async with self.engine.connect() as conn:
                 today = await runs.calls_today(conn, pol.name)
@@ -51,7 +54,7 @@ class ProviderRuntime:
             c = ProviderClient(
                 pol, http=self.http, global_bucket=self.global_bucket, usage_sink=self._sink, calls_today=today
             )
-            self._clients[pol.name] = c
+            self._clients[key] = c
         return c
 
     async def geckoterminal(self) -> geckoterminal.GeckoTerminal:
@@ -62,6 +65,12 @@ class ProviderRuntime:
 
     async def goplus(self) -> goplus.GoPlus:
         return goplus.GoPlus(await self.client(goplus.policy()))
+
+    async def telegram(self) -> telegram.TelegramBot:
+        token = self.settings.telegram_bot_token
+        if token is None or not token.get_secret_value():
+            raise RuntimeError("CIT_TELEGRAM_BOT_TOKEN is not set")
+        return telegram.TelegramBot(await self.client(telegram.policy(token.get_secret_value())))
 
     async def flush_usage(self) -> int:
         calls, self._usage = self._usage, []

@@ -140,7 +140,10 @@ with best as (
   select token_id, max(liquidity_usd) as liq, max(observed_at) as last_seen
   from pool_latest group by token_id
 ), watched as (
-  select distinct token_id from watchlist_items where token_id is not null
+  select token_id from watchlist_items where token_id is not null
+  union
+  -- Mentioned tokens stay tracked so forward performance can be measured.
+  select token_id from social_mentions where token_id is not null and published_at > now() - interval '35 days'
 )
 select t.id, t.chain_id, t.address, (w.token_id is not null) as watched, b.liq
 from tokens t

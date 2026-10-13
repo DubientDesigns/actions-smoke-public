@@ -1,0 +1,11 @@
+[
+  {"signature": "sigNEW", "timestamp": 1791878400, "type": "SWAP", "source": "RAYDIUM",
+   "tokenTransfers": [
+     {"fromUserAccount": "PoolAcct1111111111111111111111111111111111", "toUserAccount": "WalletSol111111111111111111111111111111111", "mint": "SyntheticMint1111111111111111111111111111", "tokenAmount": 1000000},
+     {"fromUserAccount": "WalletSol111111111111111111111111111111111", "toUserAccount": "PoolAcct1111111111111111111111111111111111", "mint": "So11111111111111111111111111111111111111112", "tokenAmount": 2.5}
+   ],
+   "nativeTransfers": []},
+  {"signature": "sigOLD", "timestamp": 1791870000, "type": "TRANSFER", "source": "SYSTEM_PROGRAM",
+   "tokenTransfers": [],
+   "nativeTransfers": [{"fromUserAccount": "Other1111111111111111111111111111111111111", "toUserAccount": "WalletSol111111111111111111111111111111111", "amount": 1500000000}]}
+]

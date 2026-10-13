@@ -54,7 +54,7 @@ class TokenInputs:
     sources_24h: tuple[str, ...]  # market providers with an observation in the last 24h
     link_types: tuple[str, ...]  # self-reported link types (website, twitter, telegram, ...)
     security: SecurityInput | None
-    independent_mentions_7d: int | None = None  # Phase 4; None = not collected yet
+    independent_mentions_7d: int | None = None  # None = no social source monitored (unknown)
 
 
 @dataclass
@@ -290,7 +290,7 @@ def score(inp: TokenInputs, w: ScoringWeights) -> ScoreResult:
                 None
                 if inp.independent_mentions_7d is None
                 else _band(inp.independent_mentions_7d, [(5, 1.0), (2, 0.6), (1, 0.3)]),
-                "monitored-source mentions not collected yet (Phase 4)"
+                "no social sources are monitored (register channels to collect mentions)"
                 if inp.independent_mentions_7d is None
                 else f"{inp.independent_mentions_7d} independent mentions in 7d",
             ),

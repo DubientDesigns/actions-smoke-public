@@ -15,12 +15,18 @@ live in `data_sources` and can be changed without a deploy.
 | `daily_health_report` | 08:00 SGT | — (Telegram from Phase 5) | 0 | 0 | — |
 | `assess_security` | 10 min | GoPlus `token_security` (1 address/call) | ≤ 25 (never-assessed first, then stale, deepest liquidity first) | ~150–400 typ., ≤ 3,600 max | limiter 20/min, cap 5,000/day |
 | `score_tokens` | 15 min | — (database) | 0 | 0 | stores a row only on material change |
+| `collect_telegram` | 2 min | Telegram Bot `getUpdates` | 1 | 720 | well below Bot API limits; skipped without a token |
+| `resolve_mentions` | 15 min | DEX Screener `latest/dex/tokens` + `tokens/v1/solana` | ≤ 3 (only unresolved contracts) | ≤ 288 | shares the 50/min budget |
+| `update_mention_outcomes` | 30 min | — (database) | 0 | 0 | — |
+| `score_presales` | 30 min | — (database) | 0 | 0 | stores only when inputs change |
+| `sync_wallets` | 15 min | Alchemy `alchemy_getAssetTransfers` (2/EVM wallet) · Helius (1/Solana wallet) | 1–3 per wallet | 20 wallets ≈ 4,000 | 30/min per source; free-tier credits ample for tens of wallets |
 | *Phase 5* AI reports | hourly batch | Claude Messages / Batches | only after deterministic filters | ≤ 20 requests/day default | hard caps in `ai.budget` |
 
 **Tracked set.** A token is refreshed while it is ≤ 14 days old and its best
 pool has ≥ US$2,000 liquidity (or is unknown yet), or it is on any watchlist,
 capped at 300 tokens (watchlist first, then deepest liquidity). All three
-values are in `app_settings.discovery`.
+values are in `app_settings.discovery`. Tokens mentioned by a monitored source in the
+last 35 days are always tracked, so mention outcomes have prices.
 
 ## Coverage and latency — honest limits
 

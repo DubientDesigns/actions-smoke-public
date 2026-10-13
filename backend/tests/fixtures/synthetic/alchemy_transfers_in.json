@@ -1,0 +1,6 @@
+{"jsonrpc": "2.0", "id": 1, "result": {"transfers": [
+  {"blockNum": "0x1312d05", "uniqueId": "0xbbb2:external", "hash": "0xBBB2", "from": "0x6666666666666666666666666666666666666666",
+   "to": "0x9999999999999999999999999999999999999999", "value": 0.25, "asset": "ETH", "category": "external",
+   "rawContract": {"value": "0x1", "address": null, "decimal": "0x12"},
+   "metadata": {"blockTimestamp": "2026-10-13T10:05:00.000Z"}}
+]}}

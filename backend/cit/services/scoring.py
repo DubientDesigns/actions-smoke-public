@@ -19,7 +19,7 @@ from cit import appsettings
 from cit.chains import BY_SLUG
 from cit.log import get_logger
 from cit.scoring.token_v1 import ScoreResult, SecurityInput, TokenInputs, score
-from cit.services import runs
+from cit.services import runs, social
 from cit.services.runtime import ProviderRuntime
 
 log = get_logger(__name__)
@@ -71,7 +71,7 @@ def _dec(v: Any) -> Decimal | None:
     return None if v is None else Decimal(str(v))
 
 
-def build_inputs(row: Any, sources: list[str], sec_row: Any, now: datetime) -> TokenInputs:
+def build_inputs(row: Any, sources: list[str], sec_row: Any, now: datetime, mentions: int | None = None) -> TokenInputs:
     sec = None
     if sec_row is not None:
         sec = SecurityInput(
@@ -107,6 +107,7 @@ def build_inputs(row: Any, sources: list[str], sec_row: Any, now: datetime) -> T
             )
         ),
         security=sec,
+        independent_mentions_7d=mentions,
     )
 
 
@@ -143,12 +144,15 @@ async def score_tokens(rt: ProviderRuntime) -> dict[str, Any]:
         sources = {r.token_id: list(r.sources) for r in (await conn.execute(_SOURCES, {"ids": ids})).all()}
         secs = {r.token_id: r for r in (await conn.execute(_SECURITY, {"ids": ids})).all()}
         prevs = {r.token_id: r for r in (await conn.execute(_LATEST_SCORE, {"ids": ids})).all()}
+        # None when no social source is monitored (unknown); 0 when monitored but unmentioned.
+        mention_counts = await social.independent_mentions(conn, ids)
 
     stored = 0
     async with rt.engine.begin() as conn:
         for r in rows:
             sec_row = secs.get(r.token_id)
-            inp = build_inputs(r, sources.get(r.token_id, []), sec_row, now)
+            mentions = None if mention_counts is None else mention_counts.get(r.token_id, 0)
+            inp = build_inputs(r, sources.get(r.token_id, []), sec_row, now, mentions)
             res = score(inp, weights)
             if not is_material(res, prevs.get(r.token_id), sec_row.assessed_at if sec_row else None, now):
                 continue

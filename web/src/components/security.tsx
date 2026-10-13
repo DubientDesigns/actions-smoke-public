@@ -98,9 +98,15 @@ const COMPONENT_LABEL: Record<string, string> = {
   security: "Security & tokenomics",
   social: "Social & development",
   data_quality: "Data quality & freshness",
+  documentation: "Documentation (claimed)",
+  verification: "Verification",
+  tokenomics: "Tokenomics (claimed)",
+  risk_controls: "Risk controls",
 };
 
-export function ScoreBreakdown({ score }: { score: ScoreLatest }) {
+type ScoreView = Pick<ScoreLatest, "total" | "scoring_version" | "data_cutoff_at" | "scored_at" | "risk_flags" | "components">;
+
+export function ScoreBreakdown({ score }: { score: ScoreView }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-baseline gap-2">
