@@ -4,6 +4,8 @@ Schedule (see docs/INGESTION.md for the rate-limit budget):
   discover_new_pools       every 10 min   GeckoTerminal  4-8 calls/run
   ingest_token_profiles    every 10 min   DEX Screener   1 call/run
   refresh_tracked_markets  every 15 min   DEX Screener   <=10 calls/run (300 tokens / 30)
+  assess_security          every 10 min   GoPlus         <=25 calls/run (new/stale liquid tokens)
+  score_tokens             every 15 min   database only (material changes stored)
   check_sources            every 5 min    database only
   apply_retention          daily 03:15 SGT
   daily_health_report      daily 08:00 SGT
@@ -45,6 +47,8 @@ def build_scheduler(rt: ProviderRuntime) -> AsyncIOScheduler:
     add("discover_new_pools", IntervalTrigger(minutes=10), 0)
     add("ingest_token_profiles", IntervalTrigger(minutes=10), 120)
     add("refresh_tracked_markets", IntervalTrigger(minutes=15), 240)
+    add("assess_security", IntervalTrigger(minutes=10), 300)
+    add("score_tokens", IntervalTrigger(minutes=15), 420)
     add("check_sources", IntervalTrigger(minutes=5), 60)
     add("apply_retention", CronTrigger(hour=3, minute=15, timezone=DISPLAY_TZ))
     add("daily_health_report", CronTrigger(hour=8, minute=0, timezone=DISPLAY_TZ))

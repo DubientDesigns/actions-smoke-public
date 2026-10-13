@@ -20,4 +20,7 @@ fetch ds_token_profiles "https://api.dexscreener.com/token-profiles/latest/v1"
 # Wrapped-native tokens: always have pairs.
 fetch ds_tokens_v1_base "https://api.dexscreener.com/tokens/v1/base/0x4200000000000000000000000000000000000006"
 fetch ds_tokens_v1_solana "https://api.dexscreener.com/tokens/v1/solana/So11111111111111111111111111111111111111112"
+# GoPlus token security (well-known tokens so data exists): CAKE on BSC, JUP on Solana.
+fetch goplus_evm_bsc "https://api.gopluslabs.io/api/v1/token_security/56?contract_addresses=0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"
+fetch goplus_solana "https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"
 echo "Captured into $(pwd). Now run: cd backend && uv run pytest -m live -v"

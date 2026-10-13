@@ -56,6 +56,7 @@ def clean_db(sync_conn):
     sync_conn.execute(f"truncate {TRUNCATE_TABLES} restart identity cascade")
     sync_conn.execute(
         "update data_sources set last_attempt_at = null, last_success_at = null, last_failure_at = null, "
-        "last_error = null, consecutive_failures = 0, circuit_state = 'closed', circuit_open_until = null"
+        "last_error = null, consecutive_failures = 0, circuit_state = 'closed', circuit_open_until = null, "
+        "enabled = slug not in ('rugcheck', 'telegram_bot', 'anthropic')"
     )
     return sync_conn

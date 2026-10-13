@@ -1,0 +1,22 @@
+{
+  "code": 1,
+  "message": "OK",
+  "result": {
+    "SyntheticMint1111111111111111111111111111": {
+      "mintable": {"status": "0", "authority": []},
+      "freezable": {"status": "1", "authority": [{"address": "SyntheticAuth11111111111111111111111111111"}]},
+      "closable": {"status": "0"},
+      "balance_mutable_authority": {"status": "0"},
+      "non_transferable": "0",
+      "metadata_mutable": {"status": "1"},
+      "transfer_fee": {},
+      "transfer_hook": [],
+      "default_account_state": "1",
+      "total_supply": "999999999",
+      "holders": [
+        {"account": "SyntheticHolder1111111111111111111111111", "percent": "0.12"},
+        {"account": "SyntheticHolder2222222222222222222222222", "percent": "0.08"}
+      ]
+    }
+  }
+}

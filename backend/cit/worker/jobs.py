@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from cit.log import get_logger
-from cit.services import discovery, ops, runs
+from cit.services import discovery, ops, runs, scoring, security
 from cit.services.runtime import ProviderRuntime
 
 log = get_logger(__name__)
@@ -33,6 +33,8 @@ JOBS: dict[str, JobFn] = {
     "discover_new_pools": discovery.discover_new_pools,
     "ingest_token_profiles": discovery.ingest_token_profiles,
     "refresh_tracked_markets": discovery.refresh_tracked_markets,
+    "assess_security": security.assess_security,
+    "score_tokens": scoring.score_tokens,
     "check_sources": lambda rt: ops.check_sources(rt.engine),
     "apply_retention": lambda rt: ops.apply_retention(rt.engine),
     "daily_health_report": _health_report,

@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from cit.config import Settings
-from cit.providers import dexscreener, geckoterminal
+from cit.providers import dexscreener, geckoterminal, goplus
 from cit.providers.http import ApiCall, ProviderClient, ProviderPolicy, TokenBucket
 from cit.services import runs
 
@@ -59,6 +59,9 @@ class ProviderRuntime:
 
     async def dexscreener(self) -> dexscreener.DexScreener:
         return dexscreener.DexScreener(await self.client(dexscreener.policy()))
+
+    async def goplus(self) -> goplus.GoPlus:
+        return goplus.GoPlus(await self.client(goplus.policy()))
 
     async def flush_usage(self) -> int:
         calls, self._usage = self._usage, []

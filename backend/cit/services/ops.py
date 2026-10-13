@@ -115,6 +115,19 @@ async def apply_retention(engine: AsyncEngine) -> dict[str, int]:
                 {"cut": hourly_cut},
             )
         ).rowcount
+        # Scores: keep everything for 7 days, then the last score per token per day.
+        thinned_scores = (
+            await conn.execute(
+                text("""
+            delete from opportunity_scores o using (
+              select id, row_number() over (
+                partition by coalesce(token_id, 0), coalesce(presale_id, 0), date_trunc('day', scored_at)
+                order by scored_at desc) as rn
+              from opportunity_scores where scored_at < now() - interval '7 days') r
+            where o.id = r.id and r.rn > 1
+        """)
+            )
+        ).rowcount
         disc = await appsettings.load(conn, "discovery", appsettings.DiscoverySettings)
         pruned_tokens = (
             await conn.execute(
@@ -142,6 +155,7 @@ async def apply_retention(engine: AsyncEngine) -> dict[str, int]:
         "deleted_api_usage": deleted_usage,
         "deleted_runs": deleted_runs,
         "pruned_tokens": pruned_tokens,
+        "thinned_scores": thinned_scores,
     }
 
 
