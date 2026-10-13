@@ -1,0 +1,8 @@
+[
+  {"url": "https://dexscreener.com/solana/SyntheticMint1111111111111111111111111111", "chainId": "solana",
+   "tokenAddress": "SyntheticMint1111111111111111111111111111",
+   "description": "Synthetic profile used only in tests.",
+   "links": [{"type": "twitter", "url": "https://x.com/synthetic"}, {"label": "Website", "url": "https://synthetic.example"}]},
+  {"chainId": "tron", "tokenAddress": "TXYZ"},
+  {"chainId": "base", "tokenAddress": "0xnothex"}
+]

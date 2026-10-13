@@ -1,0 +1,121 @@
+# Crypto Intelligence Terminal — single small VPS.
+#
+#   caddy  (public :80/:443) -> web (Next.js)
+#   web    -> Supabase (PostgREST, user JWT + RLS) and api (internal network)
+#   api    internal FastAPI (NOT published)
+#   worker scheduler running ingestion jobs (no ports)
+#   backup nightly pg_dump of the Supabase database to ./backups
+#
+# The database is Supabase-hosted. For local development, enable the `localdb`
+# profile to run Postgres 16 in a container instead.
+name: cit
+
+x-backend: &backend
+  build:
+    context: ..
+    dockerfile: backend/Dockerfile
+  image: cit-backend:latest
+  env_file: ../.env
+  restart: unless-stopped
+  networks: [internal]
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: ["no-new-privileges:true"]
+  logging: &logging
+    driver: json-file
+    options: {max-size: "10m", max-file: "5"}
+
+services:
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["sh", "-c", "cit migrate && cit seed-settings"]
+
+  api:
+    <<: *backend
+    command: ["cit", "api", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      CIT_SCHEDULER_ENABLED: "false"
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    mem_limit: 256m
+
+  worker:
+    <<: *backend
+    command: ["cit", "worker"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      # Worker has no HTTP port; it is healthy if its DB heartbeat is recent.
+      test: ["CMD", "python", "-c", "import asyncio,sys;from cit.api.main import readyz;r=asyncio.run(readyz());sys.exit(0 if r['status']=='ok' else 1)"]
+      interval: 2m
+      timeout: 20s
+      start_period: 2m
+      retries: 3
+    mem_limit: 384m
+
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: cit-web:latest
+    env_file: ../.env
+    environment:
+      CIT_INTERNAL_API_URL: http://api:8000
+    restart: unless-stopped
+    networks: [internal, edge]
+    depends_on: [api]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 384m
+    logging: *logging
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      CIT_DOMAIN: ${CIT_DOMAIN:-localhost}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    depends_on: [web]
+    logging: *logging
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: ../.env
+    entrypoint: ["/bin/sh", "/backup/backup-loop.sh"]
+    volumes:
+      - ./backup:/backup:ro
+      - ../backups:/backups
+    networks: [internal]
+    logging: *logging
+
+  db:
+    profiles: ["localdb"]
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cit
+      POSTGRES_PASSWORD: cit
+      POSTGRES_DB: cit
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [internal]
+
+networks:
+  internal:
+    internal: false   # workers need outbound internet; nothing here is published
+  edge: {}
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}
+  pgdata: {}
