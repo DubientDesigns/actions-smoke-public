@@ -1,0 +1,26 @@
+{
+  "code": 1,
+  "message": "OK",
+  "result": {
+    "0x2222222222222222222222222222222222222222": {
+      "is_in_dex": "1", "is_honeypot": "0", "cannot_buy": "0", "cannot_sell_all": "0",
+      "buy_tax": "0.02", "sell_tax": "0.03", "slippage_modifiable": "0", "transfer_pausable": "0",
+      "is_blacklisted": "0", "is_whitelisted": "0", "is_mintable": "0", "is_proxy": "0", "is_open_source": "1",
+      "can_take_back_ownership": "0", "hidden_owner": "0", "owner_change_balance": "0", "selfdestruct": "0",
+      "external_call": "0", "is_anti_whale": "0", "trading_cooldown": "0", "honeypot_with_same_creator": "0",
+      "owner_address": "0x0000000000000000000000000000000000000000",
+      "total_supply": "1000000000",
+      "holders": [
+        {"address": "0x1111111111111111111111111111111111111111", "percent": "0.40", "is_contract": 1, "is_locked": 0, "tag": "PancakeV2"},
+        {"address": "0x000000000000000000000000000000000000dead", "percent": "0.20", "is_contract": 0, "is_locked": 0},
+        {"address": "0xaaaa000000000000000000000000000000000001", "percent": "0.05", "is_contract": 0, "is_locked": 0},
+        {"address": "0xaaaa000000000000000000000000000000000002", "percent": "0.04", "is_contract": 0, "is_locked": 0},
+        {"address": "0xaaaa000000000000000000000000000000000003", "percent": "0.10", "is_contract": 0, "is_locked": 1}
+      ],
+      "lp_holders": [
+        {"address": "0x000000000000000000000000000000000000dead", "percent": "0.95", "is_locked": 0},
+        {"address": "0xbbbb000000000000000000000000000000000001", "percent": "0.05", "is_locked": 0}
+      ]
+    }
+  }
+}

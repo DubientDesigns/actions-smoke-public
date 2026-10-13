@@ -31,6 +31,52 @@ class DiscoverySettings(BaseModel):
     alert_min_liquidity_usd: float = Field(20000, ge=0)
 
 
+class SecurityPolicy(BaseModel):
+    """Which detected risks exclude a token, which require manual review, and thresholds.
+
+    Only checks whose status is "risk" can trigger exclusion or review. Unknown
+    or unsupported checks never pass, but they never exclude either: they leave
+    the token un-assessed ("unknown" risk level).
+    """
+
+    ruleset_version: str = "sec-v1"
+    hard_exclude_checks: list[str] = [
+        "honeypot",
+        "cannot_buy",
+        "cannot_sell_all",
+        "sell_tax",
+        "transfer_pausable",
+        "owner_privileges",
+        "selfdestruct",
+        "non_transferable",
+        "freeze_authority",
+        "balance_mutable",
+        "closable",
+        "deployer_history",
+    ]
+    review_checks: list[str] = [
+        "mint_authority",
+        "mintable",
+        "proxy",
+        "open_source",
+        "lp_lock",
+        "holder_concentration",
+        "buy_tax",
+        "transfer_fee",
+        "transfer_hook",
+        "default_account_state",
+        "supply_change",
+    ]
+    tax_warn_pct: float = Field(10, ge=0, le=100)
+    tax_risk_pct: float = Field(30, ge=0, le=100)
+    top10_warn_pct: float = Field(30, ge=0, le=100)
+    top10_risk_pct: float = Field(50, ge=0, le=100)
+    lp_locked_pass_pct: float = Field(90, ge=0, le=100)
+    lp_locked_warn_pct: float = Field(50, ge=0, le=100)
+    assessment_ttl_hours: int = Field(24, ge=1, le=24 * 14)
+    max_assessments_per_run: int = Field(25, ge=1, le=200)
+
+
 class ScoringWeights(BaseModel):
     """Heuristic weights (labelled as such). Must sum to 100."""
 
@@ -89,6 +135,7 @@ class BudgetSettings(BaseModel):
 REGISTRY: dict[str, type[BaseModel]] = {
     "discovery": DiscoverySettings,
     "scoring.token_weights": ScoringWeights,
+    "security.policy": SecurityPolicy,
     "ai.budget": AiBudget,
     "alerts": AlertSettings,
     "retention": RetentionSettings,

@@ -14,7 +14,8 @@ live docs before relying on a number, and run `scripts/capture_fixtures.sh` +
 |---|---|---|
 | GeckoTerminal `new_pools` | `providers/geckoterminal.py` | **No** — synthetic, doc-shaped payloads only |
 | DEX Screener `tokens/v1`, `token-profiles/latest/v1` | `providers/dexscreener.py` | **No** — synthetic payloads only |
-| GoPlus, RugCheck, Telegram, Claude, Alchemy, Helius | not yet built | — |
+| GoPlus `token_security` (EVM + Solana) | `providers/goplus.py`, `security/engine.py` | **No** — synthetic payloads only; `pytest -m live` fails loudly if real field names differ |
+| RugCheck, Telegram, Claude, Alchemy, Helius | not yet built | — |
 
 ## GeckoTerminal (primary discovery)
 

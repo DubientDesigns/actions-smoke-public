@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Attribution, ChainBadge, Freshness, PageHeader, sourceLabel, Stat } from "@/components/data-display";
 import { Guarded, Notice } from "@/components/guard";
 import { SeriesChart, type Point } from "@/components/series-chart";
+import { CheckList, ScoreBreakdown, SecuritySummary } from "@/components/security";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +35,7 @@ async function TokenDetail({ params }: { params: PageProps<"/tokens/[chain]/[add
   if (!EXPLORER[chain]) notFound();
   const data = await getToken(chain, decodeURIComponent(address));
   if (!data) notFound();
-  const { token: t, pools, snapshots } = data;
+  const { token: t, pools, snapshots, security, score } = data;
   return (
     <>
       <PageHeader
@@ -117,13 +118,34 @@ async function TokenDetail({ params }: { params: PageProps<"/tokens/[chain]/[add
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="Security" subtitle="Phase 3" />
-          <CardBody className="text-[13px] text-fg-muted">
-            <Badge tone="unknown">NOT ASSESSED</Badge>
-            <p className="mt-2">No security checks have run for this token. This is <strong>unknown</strong>, not a pass.</p>
+          <CardHeader title="Research-priority score" subtitle="Heuristic v1 — evidence and missing data per category" />
+          <CardBody>
+            {score ? (
+              <ScoreBreakdown score={score} />
+            ) : (
+              <p className="text-[13px] text-fg-muted">
+                Not scored. Scores are computed for tracked tokens whose best pool meets the liquidity threshold.
+              </p>
+            )}
           </CardBody>
         </Card>
       </div>
+      <Card className="mt-4">
+        <CardHeader title="Security checks" subtitle="GoPlus heuristics — not an audit. Unknown ≠ pass." />
+        <CardBody>
+          {security ? (
+            <div className="space-y-3">
+              <SecuritySummary s={security} />
+              <CheckList checks={security.checks} />
+            </div>
+          ) : (
+            <p className="text-[13px] text-fg-muted">
+              <Badge tone="unknown">NOT ASSESSED</Badge> No security checks have run for this token yet. This is{" "}
+              <strong>unknown</strong>, not a pass.
+            </p>
+          )}
+        </CardBody>
+      </Card>
       <Attribution />
     </>
   );

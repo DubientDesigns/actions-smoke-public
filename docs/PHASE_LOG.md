@@ -1,5 +1,65 @@
 # Phase log
 
+## Phase 3 — 2026-10-13
+
+### Tests run
+* Backend: **65 passed** (`uv run pytest`); ruff clean. New coverage:
+  security engine on synthetic GoPlus-shaped payloads (clean token, honeypot,
+  sparse/partial data, Solana freeze authority, not-found and rate-limit
+  envelopes, policy overrides, empty data → nothing passes); scorecard (strong
+  token, all-unknown token earns nothing, unknown checks score 0, hard
+  exclusion, stale security, red flags, configurable/validated weights,
+  reproducible input hash); end-to-end jobs against Postgres (candidate
+  selection skips illiquid tokens, pool addresses excluded from concentration,
+  fresh assessments not repeated, stale ones re-run with supply comparison,
+  not-found retried after 6h, rate-limited envelope stores nothing and marks
+  the run failed, disabled source skipped, scores stored only on material
+  change); RLS on the new views.
+* Web: ESLint, typecheck, **10 Vitest tests** (incl. server-rendering the
+  security/score components with sample data), `next build`.
+* CLI: `cit migrate` applied 0004; `assess_security` against the blocked
+  GoPlus host recorded the failure without raising; `score_tokens` stored a
+  score with security listed as missing.
+
+### Failures found and fixed
+* A test left GoPlus disabled, silently skipping assessments in later tests →
+  the `clean_db` fixture now restores `data_sources.enabled`, and the scoring
+  test asserts that assessment actually ran.
+* Storing a score every refresh would add ~58 MB/day → scores are stored only
+  on material change (≥ 2 points, flag change, new security assessment, or 6h
+  heartbeat) and thinned to one per token per day after 7 days.
+* Vitest 5 / Vite 8 rejects the `esbuild.jsx` option → removed (not needed).
+
+### Completed features
+See [CHECKLIST.md](CHECKLIST.md) Phase 3.
+
+### Limitations (honest)
+1. **GoPlus not verified against a live response** (host blocked here). Field
+   names follow the docs; if they differ, checks degrade to "unknown" (never
+   "pass"), and the live test fails loudly. Run `scripts/capture_fixtures.sh`
+   and `pytest -m live` on the VPS.
+2. On Solana, GoPlus holder entries may be token accounts rather than owner
+   addresses, so pool holdings may not be excluded from concentration; the
+   check can over-report concentration (conservative direction).
+3. Honeypot detection, LP lock, taxes and owner privileges are unavailable for
+   Solana from this provider and are shown as **unsupported**.
+4. "Suspicious deployer history" is limited to GoPlus's
+   `honeypot_with_same_creator` (EVM only); a fuller deployer analysis needs
+   on-chain data (Phase 4 wallet work).
+5. Social category can reach at most 7.5/15 until mention collection exists
+   (Phase 4); links are self-reported and paid profile links earn nothing.
+6. RugCheck cross-check deferred (auth and terms unverified).
+7. Weights and thresholds are heuristics, to be validated by forward testing
+   in Phase 6.
+
+### Next: Phase 4 — social intelligence and presale watchlists
+Source registry UI, Telegram bot ingestion (only chats where the bot is
+added), manual mention entry, coordination groups, mention forward
+performance (incl. failed/delisted tokens), presale manual watchlist with
+per-claim provenance and a separate presale scorecard, wallet watchlist via
+Alchemy/Helius free tiers.
+
+
 ## Phases 1 & 2 — 2026-10-13
 
 ### Tests run

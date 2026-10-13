@@ -94,3 +94,9 @@ export function formatDuration(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return "—";
   return formatAge(new Date(0), new Date(Math.max(0, seconds) * 1000));
 }
+
+/** Unsigned percentage (taxes, shares). */
+export function formatShare(v: Num, digits = 1): string {
+  const n = toNum(v);
+  return n === null ? "—" : `${n.toFixed(digits)}%`;
+}

@@ -14,8 +14,8 @@ paper-tracks early-stage tokens on **BNB Chain, Ethereum, Solana and Base**.
 |---|---|---|
 | 1 | Repository, infrastructure, database | **Done** (see [docs/PHASE_LOG.md](docs/PHASE_LOG.md)) |
 | 2 | Market discovery on all four chains | **Built; not yet verified against live providers** (sandbox egress blocked) |
-| 3 | Security filters, scoring, token dashboard | Next |
-| 4 | Social intelligence, presale watchlists | Planned |
+| 3 | Security filters, scoring, token dashboard | **Built; GoPlus not yet verified against live responses** |
+| 4 | Social intelligence, presale watchlists | Next |
 | 5 | AI reports, Telegram alerts, cost controls | Planned |
 | 6 | Paper portfolio, forward performance | Planned (schema + look-ahead guard already in place) |
 | 7 | Testing, production deployment, monitoring | Planned |
@@ -46,7 +46,7 @@ uv run cit migrate --local-bootstrap   # --local-bootstrap only on plain Postgre
 uv run cit seed-settings
 uv run cit run-job discover_new_pools  # one-off run
 uv run cit worker                       # full schedule
-uv run pytest                           # 43 tests; `pytest -m live` for real-provider checks
+uv run pytest                           # 65 tests; `pytest -m live` for real-provider checks
 
 cd ../web
 npm ci && npm run dev

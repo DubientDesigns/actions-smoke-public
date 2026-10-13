@@ -1,0 +1,9 @@
+{
+  "code": 2,
+  "message": "partial data obtained",
+  "result": {
+    "0x5555555555555555555555555555555555555555": {
+      "is_in_dex": "1", "is_honeypot": "", "buy_tax": "", "sell_tax": "0.01", "is_open_source": "1"
+    }
+  }
+}

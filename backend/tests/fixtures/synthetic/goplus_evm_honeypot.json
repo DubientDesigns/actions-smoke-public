@@ -1,0 +1,12 @@
+{
+  "code": 1,
+  "message": "OK",
+  "result": {
+    "0x4444444444444444444444444444444444444444": {
+      "is_in_dex": "1", "is_honeypot": "1", "cannot_buy": "0", "cannot_sell_all": "1",
+      "buy_tax": "0", "sell_tax": "1", "is_open_source": "0",
+      "can_take_back_ownership": "1", "hidden_owner": "0", "owner_change_balance": "0",
+      "total_supply": "5"
+    }
+  }
+}

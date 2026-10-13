@@ -14,9 +14,11 @@ from pathlib import Path
 import httpx
 import pytest
 
+from cit.appsettings import SecurityPolicy
 from cit.chains import BY_GECKO, BY_SLUG, CHAINS
-from cit.providers import dexscreener, geckoterminal
+from cit.providers import dexscreener, geckoterminal, goplus
 from cit.providers.http import ProviderClient
+from cit.security.engine import evaluate
 
 LIVE = Path(__file__).parent / "fixtures" / "live"
 pytestmark = pytest.mark.live
@@ -67,3 +69,17 @@ async def test_direct_geckoterminal_and_dexscreener():
             pytest.skip(f"providers unreachable: {exc}")
     assert obs and pairs
     assert BY_SLUG["base"]
+
+
+@pytest.mark.parametrize("name,chain,address", [
+    ("goplus_evm_bsc", "bsc", "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"),
+    ("goplus_solana", "solana", "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"),
+])
+def test_captured_goplus_maps_core_checks(name, chain, address):
+    res = goplus.parse_envelope(chain, address, _load(name))
+    assert res.found, "token missing from real GoPlus response"
+    a = evaluate(chain, res.found, res.data, SecurityPolicy())
+    known = [c.key for c in a.checks if c.status in ("pass", "warn", "risk")]
+    # If the real field names differ from the documented ones, most checks become
+    # "unknown" -- fail loudly instead of silently under-assessing.
+    assert len(known) >= 5, f"only {known} resolved; check GoPlus field names"

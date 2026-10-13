@@ -144,3 +144,26 @@ def test_dashboard_views_respect_rls(migrated_db, clean_db):
         c.execute("reset role")
         _as_user(c, member)
         assert c.execute("select count(*) from v_token_overview").fetchone()[0] == 1
+
+
+def test_phase3_views_respect_rls(migrated_db, clean_db):
+    tok = clean_db.execute("insert into tokens (chain_id, address) values (1, '0x01') returning id").fetchone()[0]
+    clean_db.execute(
+        "insert into security_assessments (token_id, source_id, valid_until, coverage, risk_level, ruleset_version) "
+        "values (%s, 1, now() + interval '1 day', 'complete', 'low', 'v')", (tok,))
+    clean_db.execute(
+        "insert into opportunity_scores (token_id, scorecard, scoring_version, data_cutoff_at, total, components, "
+        "inputs_hash) values (%s, 'token', 'v', now(), 50, '{}', 'h')", (tok,))
+    member = uuid.uuid4()
+    clean_db.execute("insert into app_users (user_id, email) values (%s, 'm@example.com')", (member,))
+    with psycopg.connect(to_psycopg_dsn(migrated_db), autocommit=True) as c:
+        for view in ("v_security_latest", "v_score_latest"):
+            _as_user(c, uuid.uuid4())
+            assert c.execute(f"select count(*) from {view}").fetchone()[0] == 0, view
+            c.execute("reset role")
+            _as_user(c, member)
+            assert c.execute(f"select count(*) from {view}").fetchone()[0] == 1, view
+            c.execute("reset role")
+        _as_user(c, member)
+        row = c.execute("select risk_level, score_total from v_token_overview").fetchone()
+        assert row[0] == "low" and float(row[1]) == 50

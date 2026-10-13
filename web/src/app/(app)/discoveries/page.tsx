@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import { Attribution, PageHeader } from "@/components/data-display";
-import { chainParam, DiscoveryFilters, num, sortParam, str } from "@/components/filters";
+import { chainParam, DiscoveryFilters, num, riskParam, sortParam, str, toQuery } from "@/components/filters";
+import { SavedViews } from "@/components/saved-views";
 import { Guarded } from "@/components/guard";
 import { TokenTable } from "@/components/token-table";
 import { Card } from "@/components/ui/card";
 import { TableSkeleton } from "@/components/ui/skeleton";
-import { listTokens } from "@/lib/data";
+import { listTokens, requestTime } from "@/lib/data";
 
 export const metadata = { title: "Live Discoveries" };
 
@@ -34,6 +35,8 @@ async function Results({ searchParams }: { searchParams: PageProps<"/discoveries
     chain: chainParam(sp.chain),
     minLiquidity: num(sp.minLiquidity),
     maxAgeHours: num(sp.maxAgeHours) ?? 24,
+    minScore: num(sp.minScore),
+    risk: riskParam(sp.risk),
     sort: sortParam(sp.sort),
     q: str(sp.q)?.slice(0, 64),
     limit: 200,
@@ -41,18 +44,21 @@ async function Results({ searchParams }: { searchParams: PageProps<"/discoveries
   const rows = await listTokens(filters);
   return (
     <>
+      <SavedViews page="discoveries" path="/discoveries" query={toQuery(sp)} />
       <DiscoveryFilters
         action="/discoveries"
         values={{
           chain: filters.chain,
           minLiquidity: str(sp.minLiquidity),
           maxAgeHours: String(filters.maxAgeHours),
+          minScore: str(sp.minScore),
+          risk: filters.risk,
           sort: filters.sort,
           q: filters.q,
         }}
       />
       <div className="px-4 py-2 text-[11px] text-fg-dim">{rows.length} tokens (max 200 shown)</div>
-      <TokenTable rows={rows} empty="No tokens match these filters." />
+      <TokenTable rows={rows} now={requestTime()} empty="No tokens match these filters." />
     </>
   );
 }

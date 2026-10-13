@@ -30,13 +30,16 @@
 - [ ] Confirm every chain shows a latest successful refresh in production
 
 ## Phase 3 — Security, scoring, token dashboard
-- [ ] GoPlus EVM + Solana adapters → `security_assessments` with per-check pass/risk/warn/unknown/unsupported
-- [ ] Optional RugCheck Solana cross-check (after verifying auth/terms)
-- [ ] Configurable hard exclusions / warnings / review rules (`app_settings.security.policy`)
-- [ ] Staleness: `valid_until`, re-assessment schedule; stale treated as unknown
-- [ ] Token scorecard v1 (25/25/25/15/10, labelled heuristic), evidence + missing data + risk flags + version + cutoff
-- [ ] Unknown metrics score 0; tests proving it
-- [ ] Security Analysis page; scores and flags in Discoveries and token detail; saved views
+- [~] GoPlus EVM + Solana adapters → `security_assessments` with per-check pass/risk/warn/unknown/unsupported (field names unverified against a live response)
+- [ ] Optional RugCheck Solana cross-check (deferred: auth/terms unverified)
+- [x] Configurable hard exclusions / warnings / review rules (`app_settings.security.policy`)
+- [x] Staleness: `valid_until` (24h; 6h retry when not found), re-assessment schedule; stale treated as unknown
+- [x] Holder concentration excludes burn, locked and our known pool addresses; LP lock; supply change vs previous assessment; deployer honeypot history (EVM)
+- [x] Token scorecard v1 (25/25/25/15/10, labelled heuristic), evidence + missing data + risk flags + version + cutoff + input hash
+- [x] Unknown metrics score 0; tests proving it
+- [x] Scores stored only on material change; score retention
+- [x] Security Analysis page; score and risk in Discoveries, Explorer, Overview and token detail; saved views
+- [ ] Run `pytest -m live` GoPlus checks on the VPS
 
 ## Phase 4 — Social intelligence and presales
 - [ ] Source registry UI (`social_channels` with access basis)

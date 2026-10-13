@@ -6,6 +6,9 @@ import type {
   HealthRow,
   JobFreshness,
   PoolDetail,
+  SavedView,
+  ScoreLatest,
+  SecurityLatest,
   Snapshot,
   TokenOverview,
   UsageDaily,
@@ -35,12 +38,16 @@ function check<T>(res: { data: T | null; error: { message: string } | null }): T
   return res.data as T;
 }
 
+export type RiskFilter = "all" | "hide_excluded" | "assessed_clean" | "excluded";
+
 export type DiscoveryFilters = {
   chain?: string;
   minLiquidity?: number;
   maxAgeHours?: number;
+  minScore?: number;
+  risk?: RiskFilter;
   q?: string;
-  sort?: "newest" | "liquidity" | "volume";
+  sort?: "newest" | "liquidity" | "volume" | "score";
   limit?: number;
 };
 
@@ -48,6 +55,7 @@ const SORTS = {
   newest: { column: "first_observed_at", ascending: false },
   liquidity: { column: "liquidity_usd", ascending: false },
   volume: { column: "volume_h24_usd", ascending: false },
+  score: { column: "score_total", ascending: false },
 } as const;
 
 export async function listTokens(f: DiscoveryFilters): Promise<TokenOverview[]> {
@@ -58,6 +66,10 @@ export async function listTokens(f: DiscoveryFilters): Promise<TokenOverview[]> 
   if (f.maxAgeHours && f.maxAgeHours > 0) {
     q = q.gte("first_observed_at", new Date(Date.now() - f.maxAgeHours * 3600_000).toISOString());
   }
+  if (f.minScore && f.minScore > 0) q = q.gte("score_total", f.minScore);
+  if (f.risk === "hide_excluded") q = q.or("hard_excluded.is.null,hard_excluded.eq.false");
+  if (f.risk === "assessed_clean") q = q.in("risk_level", ["low", "medium"]).eq("hard_excluded", false);
+  if (f.risk === "excluded") q = q.eq("hard_excluded", true);
   if (f.q) {
     const term = f.q.trim();
     // Exact address match, or symbol/name prefix. PostgREST filter values are escaped by quoting.
@@ -75,7 +87,7 @@ export async function getToken(chain: string, address: string) {
     await supabase.from("v_token_overview").select("*").eq("chain", chain).eq("address", address).maybeSingle(),
   ) as TokenOverview | null;
   if (!token) return null;
-  const [pools, snaps] = await Promise.all([
+  const [pools, snaps, security, score] = await Promise.all([
     supabase.from("v_pool_detail").select("*").eq("token_id", token.token_id).order("liquidity_usd", {
       ascending: false,
       nullsFirst: false,
@@ -86,11 +98,15 @@ export async function getToken(chain: string, address: string) {
       .eq("token_id", token.token_id)
       .order("observed_at", { ascending: false })
       .limit(2000),
+    supabase.from("v_security_latest").select("*").eq("token_id", token.token_id).maybeSingle(),
+    supabase.from("v_score_latest").select("*").eq("token_id", token.token_id).maybeSingle(),
   ]);
   return {
     token,
     pools: check(pools) as PoolDetail[],
     snapshots: (check(snaps) as Snapshot[]).reverse(),
+    security: check(security) as SecurityLatest | null,
+    score: check(score) as ScoreLatest | null,
   };
 }
 
@@ -138,4 +154,49 @@ export async function listUsage(days = 7): Promise<UsageDaily[]> {
 export async function listSettings(): Promise<{ key: string; value: unknown; updated_at: string; updated_by: string | null }[]> {
   const supabase = await createClient();
   return check(await supabase.from("app_settings").select("key, value, updated_at, updated_by").order("key"));
+}
+
+export type SecurityFilters = {
+  chain?: string;
+  risk?: string;
+  coverage?: string;
+  stale?: "only" | "hide";
+  limit?: number;
+};
+
+export async function listSecurity(f: SecurityFilters): Promise<SecurityLatest[]> {
+  const supabase = await createClient();
+  let q = supabase.from("v_security_latest").select("*");
+  if (f.chain) q = q.eq("chain", f.chain);
+  if (f.risk) q = q.eq("risk_level", f.risk);
+  if (f.coverage) q = q.eq("coverage", f.coverage);
+  if (f.stale === "only") q = q.eq("is_stale", true);
+  if (f.stale === "hide") q = q.eq("is_stale", false);
+  return check(await q.order("assessed_at", { ascending: false }).limit(f.limit ?? 200));
+}
+
+export async function securityCounts(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const levels = ["critical", "high", "medium", "low", "unknown"];
+  const res = await Promise.all(
+    levels.map(async (l) => {
+      const { count, error } = await supabase
+        .from("v_security_latest")
+        .select("token_id", { count: "exact", head: true })
+        .eq("risk_level", l);
+      if (error) throw new Error(error.message);
+      return [l, count ?? 0] as const;
+    }),
+  );
+  return Object.fromEntries(res);
+}
+
+export async function listSavedViews(page: string): Promise<SavedView[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("saved_views").select("id, page, name, params").eq("page", page).order("name"));
+}
+
+/** Request-time clock for staleness checks in server components (kept out of render bodies). */
+export function requestTime(): Date {
+  return new Date();
 }

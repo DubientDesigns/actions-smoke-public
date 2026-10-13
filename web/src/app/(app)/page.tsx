@@ -5,7 +5,7 @@ import { Guarded } from "@/components/guard";
 import { TokenTable } from "@/components/token-table";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Skeleton, TableSkeleton } from "@/components/ui/skeleton";
-import { getOverviewStats, listSources, listTokens } from "@/lib/data";
+import { getOverviewStats, listSources, listTokens, requestTime } from "@/lib/data";
 import { CHAIN_LABEL } from "@/lib/nav";
 
 export const metadata = { title: "Overview" };
@@ -27,11 +27,13 @@ export default function OverviewPage() {
 }
 
 async function OverviewContent() {
-  const [stats, sources, latest] = await Promise.all([
+  const [stats, sources, latest, top] = await Promise.all([
     getOverviewStats(),
     listSources(),
     listTokens({ sort: "newest", minLiquidity: 10000, maxAgeHours: 24, limit: 15 }),
+    listTokens({ sort: "score", risk: "hide_excluded", maxAgeHours: 72, minScore: 1, limit: 10 }),
   ]);
+  const now = requestTime();
   const market = sources.filter((s) => s.kind === "market");
   return (
     <div className="space-y-4">
@@ -59,12 +61,20 @@ async function OverviewContent() {
       </Card>
       <Card>
         <CardHeader
+          title="Highest research priority (last 72h, excluded tokens hidden)"
+          subtitle="Heuristic score v1: what to look at first, not what will go up. Open a token to see the evidence and what is missing."
+          right={<Link href="/discoveries?sort=score&risk=hide_excluded&maxAgeHours=168" className="text-xs text-accent hover:underline">More →</Link>}
+        />
+        <TokenTable rows={top} now={now} empty="No scored tokens yet." />
+      </Card>
+      <Card>
+        <CardHeader
           title="Latest discoveries with ≥ $10K liquidity"
-          subtitle="Seen in the last 24 hours. Liquidity alone says nothing about safety; security checks arrive in Phase 3."
+          subtitle="Seen in the last 24 hours. Liquidity alone says nothing about safety; check the risk column."
           right={<Link href="/discoveries" className="text-xs text-accent hover:underline">All discoveries →</Link>}
         />
         <Suspense fallback={<TableSkeleton />}>
-          <TokenTable rows={latest} empty="No tokens above the liquidity threshold in the last 24 hours." />
+          <TokenTable rows={latest} now={now} empty="No tokens above the liquidity threshold in the last 24 hours." />
         </Suspense>
       </Card>
       <Attribution />
