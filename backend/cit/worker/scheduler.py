@@ -6,6 +6,11 @@ Schedule (see docs/INGESTION.md for the rate-limit budget):
   refresh_tracked_markets  every 15 min   DEX Screener   <=10 calls/run (300 tokens / 30)
   assess_security          every 10 min   GoPlus         <=25 calls/run (new/stale liquid tokens)
   score_tokens             every 15 min   database only (material changes stored)
+  collect_telegram         every 2 min    Telegram Bot   1 call (skipped without a bot token)
+  resolve_mentions         every 15 min   DEX Screener   <=3 calls (unknown mentioned contracts)
+  update_mention_outcomes  every 30 min   database only
+  score_presales           every 30 min   database only
+  sync_wallets             every 15 min   Alchemy/Helius 1-3 calls per tracked wallet (skipped without keys)
   check_sources            every 5 min    database only
   apply_retention          daily 03:15 SGT
   daily_health_report      daily 08:00 SGT
@@ -49,6 +54,11 @@ def build_scheduler(rt: ProviderRuntime) -> AsyncIOScheduler:
     add("refresh_tracked_markets", IntervalTrigger(minutes=15), 240)
     add("assess_security", IntervalTrigger(minutes=10), 300)
     add("score_tokens", IntervalTrigger(minutes=15), 420)
+    add("collect_telegram", IntervalTrigger(minutes=2), 30)
+    add("resolve_mentions", IntervalTrigger(minutes=15), 360)
+    add("update_mention_outcomes", IntervalTrigger(minutes=30), 480)
+    add("score_presales", IntervalTrigger(minutes=30), 90)
+    add("sync_wallets", IntervalTrigger(minutes=15), 540)
     add("check_sources", IntervalTrigger(minutes=5), 60)
     add("apply_retention", CronTrigger(hour=3, minute=15, timezone=DISPLAY_TZ))
     add("daily_health_report", CronTrigger(hour=8, minute=0, timezone=DISPLAY_TZ))

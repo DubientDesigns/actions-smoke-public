@@ -44,6 +44,10 @@ def test_strong_token_scores_high_but_social_capped_until_phase4():
     # Mentions are not collected yet: half of the social category is unreachable and listed as missing.
     assert c["social"]["score"] == pytest.approx(7.5)
     assert any("independent_mentions" in m for m in r.missing_data)
+    # Monitored but unmentioned is a known zero, not missing.
+    zero = score(replace(GOOD, independent_mentions_7d=0), W)
+    assert not any("independent_mentions" in m for m in zero.missing_data)
+    assert score(replace(GOOD, independent_mentions_7d=5), W).components["social"]["score"] == pytest.approx(15)
     assert r.total == pytest.approx(92.5) and r.risk_flags == []
 
 

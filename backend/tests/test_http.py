@@ -66,8 +66,9 @@ def test_circuit_breaker_opens_and_half_opens():
 
 @respx.mock
 async def test_retries_429_then_succeeds_and_records_usage():
-    route = respx.get(f"{BASE}/x").mock(side_effect=[
-        httpx.Response(429, headers={"retry-after": "7"}), httpx.Response(200, json={"ok": 1})])
+    route = respx.get(f"{BASE}/x").mock(
+        side_effect=[httpx.Response(429, headers={"retry-after": "7"}), httpx.Response(200, json={"ok": 1})]
+    )
     c, calls, sleeps = make_client()
     assert await c.get_json("/x") == {"ok": 1}
     assert route.call_count == 2
@@ -129,3 +130,18 @@ async def test_invalid_json_is_a_failure():
     c, _, _ = make_client()
     with pytest.raises(ProviderError, match="invalid JSON"):
         await c.get_json("/x")
+
+
+@respx.mock
+async def test_post_and_secret_redaction():
+    route = respx.post(f"{BASE}/rpc").mock(return_value=httpx.Response(200, json={"result": 1}))
+    c, _calls, _ = make_client()
+    assert await c.post_json("/rpc", {"id": 1}) == {"result": 1}
+    assert route.calls[0].request.content == b'{"id":1}'
+    secret = "123456:SECRET-TOKEN"
+    pol = ProviderPolicy("telegram_bot", f"https://provider.test/bot{secret}", 6000, max_retries=0, redact=(secret,))
+    respx.get(f"https://provider.test/bot{secret}/getUpdates").mock(side_effect=httpx.ConnectError(f"boom {secret}"))
+    c2 = ProviderClient(pol, http=httpx.AsyncClient())
+    with pytest.raises(ProviderError) as ei:
+        await c2.get_json("/getUpdates")
+    assert secret not in str(ei.value) and "***" in str(ei.value)

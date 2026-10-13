@@ -138,6 +138,9 @@ class ProviderPolicy:
     backoff_base_s: float = 2.0
     backoff_max_s: float = 60.0
     headers: dict[str, str] = field(default_factory=dict)
+    # Secrets that may appear in URLs (e.g. Telegram bot tokens, API keys in paths);
+    # scrubbed from every error message this client raises or logs.
+    redact: tuple[str, ...] = ()
 
 
 RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504, 520, 522, 524}
@@ -182,12 +185,44 @@ class ProviderClient:
         exp = self.policy.backoff_base_s * (2**attempt)
         return min(self.policy.backoff_max_s, exp) * (0.5 + random.random() / 2)  # noqa: S311
 
+    def _scrub(self, text: str) -> str:
+        for secret in self.policy.redact:
+            if secret:
+                text = text.replace(secret, "***")
+        return text
+
     async def get_json(self, path: str, params: dict[str, Any] | None = None, *, endpoint: str | None = None) -> Any:
+        return await self.request_json("GET", path, params=params, endpoint=endpoint)
+
+    async def post_json(self, path: str, body: Any, *, endpoint: str | None = None) -> Any:
+        return await self.request_json("POST", path, json_body=body, endpoint=endpoint)
+
+    async def request_json(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+        json_body: Any = None,
+        endpoint: str | None = None,
+    ) -> Any:
+        try:
+            return await self._request_json(method, path, params, json_body, endpoint)
+        except ProviderError as exc:
+            scrubbed = self._scrub(str(exc))
+            if scrubbed != str(exc):
+                raise type(exc)(exc.provider, scrubbed.removeprefix(f"{exc.provider}: "), exc.status_code) from None
+            raise
+
+    async def _request_json(
+        self, method: str, path: str, params: dict[str, Any] | None, json_body: Any, endpoint: str | None
+    ) -> Any:
         name = self.policy.name
         label = endpoint or path
         if not self.breaker.allow():
             raise CircuitOpenError(name, f"circuit open until {self.breaker.open_until}")
-        url = self.policy.base_url.rstrip("/") + "/" + path.lstrip("/")
+        base = self.policy.base_url.rstrip("/")
+        url = f"{base}/{path.lstrip('/')}" if path.strip("/") else base
         last_exc: Exception | None = None
         for attempt in range(self.policy.max_retries + 1):
             if self.policy.daily_cap is not None and self.calls_today >= self.policy.daily_cap:
@@ -199,7 +234,7 @@ class ProviderClient:
             status: int | None = None
             retry_after: str | None = None
             try:
-                resp = await self.http.get(url, params=params, headers=self.policy.headers)
+                resp = await self.http.request(method, url, params=params, json=json_body, headers=self.policy.headers)
                 status = resp.status_code
                 retry_after = resp.headers.get("retry-after")
                 ok = 200 <= status < 300

@@ -10,10 +10,30 @@ from cit.chains import CHAINS
 from cit.db.migrate import MigrationError, migrate, to_psycopg_dsn
 
 REQUIRED_TABLES = {
-    "chains", "tokens", "pools", "market_snapshots", "presales", "data_sources", "ingestion_runs",
-    "security_assessments", "influencers", "social_mentions", "tracked_wallets", "wallet_events",
-    "opportunity_scores", "research_reports", "watchlists", "alerts", "paper_portfolios", "paper_positions",
-    "paper_orders", "paper_fills", "strategy_definitions", "strategy_evaluations", "api_usage", "system_health",
+    "chains",
+    "tokens",
+    "pools",
+    "market_snapshots",
+    "presales",
+    "data_sources",
+    "ingestion_runs",
+    "security_assessments",
+    "influencers",
+    "social_mentions",
+    "tracked_wallets",
+    "wallet_events",
+    "opportunity_scores",
+    "research_reports",
+    "watchlists",
+    "alerts",
+    "paper_portfolios",
+    "paper_positions",
+    "paper_orders",
+    "paper_fills",
+    "strategy_definitions",
+    "strategy_evaluations",
+    "api_usage",
+    "system_health",
 }
 
 
@@ -70,8 +90,7 @@ def _as_user(conn, user_id: uuid.UUID | None, role: str = "authenticated"):
 def test_rls_blocks_non_allowlisted_and_anon(migrated_db, clean_db):
     clean_db.execute("insert into tokens (chain_id, address, symbol) values (1, '0x01', 'AAA')")
     member, stranger = uuid.uuid4(), uuid.uuid4()
-    clean_db.execute("insert into app_users (user_id, email, role) values (%s, 'me@example.com', 'owner')",
-                     (member,))
+    clean_db.execute("insert into app_users (user_id, email, role) values (%s, 'me@example.com', 'owner')", (member,))
     with psycopg.connect(to_psycopg_dsn(migrated_db), autocommit=True) as c:
         _as_user(c, None, "anon")
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
@@ -108,14 +127,20 @@ def test_paper_fill_lookahead_is_rejected_by_database(clean_db):
     order = clean_db.execute(
         "insert into paper_orders (portfolio_id, token_id, side, order_type, origin, signal_at, earliest_fill_at, "
         "requested_notional_usd) values (%s, %s, 'buy', 'market', 'manual', "
-        "'2026-01-01 00:00Z', '2026-01-01 00:01Z', 100) returning id", (pf, tok)).fetchone()[0]
+        "'2026-01-01 00:00Z', '2026-01-01 00:01Z', 100) returning id",
+        (pf, tok),
+    ).fetchone()[0]
     with pytest.raises(psycopg.errors.CheckViolation, match="look-ahead"):
         clean_db.execute(
             "insert into paper_fills (order_id, price_observed_at, reference_price_usd, executed_price_usd, quantity)"
-            " values (%s, '2026-01-01 00:00:30Z', 1, 1, 1)", (order,))
+            " values (%s, '2026-01-01 00:00:30Z', 1, 1, 1)",
+            (order,),
+        )
     clean_db.execute(
         "insert into paper_fills (order_id, price_observed_at, reference_price_usd, executed_price_usd, quantity)"
-        " values (%s, '2026-01-01 00:01:00Z', 1, 1, 1)", (order,))
+        " values (%s, '2026-01-01 00:01:00Z', 1, 1, 1)",
+        (order,),
+    )
 
 
 def test_order_cannot_fill_before_signal(clean_db):
@@ -124,14 +149,17 @@ def test_order_cannot_fill_before_signal(clean_db):
     with pytest.raises(psycopg.errors.CheckViolation):
         clean_db.execute(
             "insert into paper_orders (portfolio_id, token_id, side, order_type, origin, signal_at, earliest_fill_at)"
-            " values (%s, %s, 'buy', 'market', 'manual', '2026-01-01 00:01Z', '2026-01-01 00:00Z')", (pf, tok))
+            " values (%s, %s, 'buy', 'market', 'manual', '2026-01-01 00:01Z', '2026-01-01 00:00Z')",
+            (pf, tok),
+        )
 
 
 def test_opportunity_score_requires_matching_target(clean_db):
     with pytest.raises(psycopg.errors.CheckViolation):
         clean_db.execute(
             "insert into opportunity_scores (scorecard, scoring_version, data_cutoff_at, total, components, "
-            "inputs_hash) values ('token', 'v1', now(), 50, '{}', 'h')")
+            "inputs_hash) values ('token', 'v1', now(), 50, '{}', 'h')"
+        )
 
 
 def test_dashboard_views_respect_rls(migrated_db, clean_db):
@@ -150,10 +178,14 @@ def test_phase3_views_respect_rls(migrated_db, clean_db):
     tok = clean_db.execute("insert into tokens (chain_id, address) values (1, '0x01') returning id").fetchone()[0]
     clean_db.execute(
         "insert into security_assessments (token_id, source_id, valid_until, coverage, risk_level, ruleset_version) "
-        "values (%s, 1, now() + interval '1 day', 'complete', 'low', 'v')", (tok,))
+        "values (%s, 1, now() + interval '1 day', 'complete', 'low', 'v')",
+        (tok,),
+    )
     clean_db.execute(
         "insert into opportunity_scores (token_id, scorecard, scoring_version, data_cutoff_at, total, components, "
-        "inputs_hash) values (%s, 'token', 'v', now(), 50, '{}', 'h')", (tok,))
+        "inputs_hash) values (%s, 'token', 'v', now(), 50, '{}', 'h')",
+        (tok,),
+    )
     member = uuid.uuid4()
     clean_db.execute("insert into app_users (user_id, email) values (%s, 'm@example.com')", (member,))
     with psycopg.connect(to_psycopg_dsn(migrated_db), autocommit=True) as c:
@@ -167,3 +199,28 @@ def test_phase3_views_respect_rls(migrated_db, clean_db):
         _as_user(c, member)
         row = c.execute("select risk_level, score_total from v_token_overview").fetchone()
         assert row[0] == "low" and float(row[1]) == 50
+
+
+def test_phase4_owner_can_curate_viewer_cannot(migrated_db, clean_db):
+    owner, viewer = uuid.uuid4(), uuid.uuid4()
+    clean_db.execute(
+        "insert into app_users (user_id, email, role) values (%s, 'o@example.com', 'owner'), "
+        "(%s, 'v@example.com', 'viewer')",
+        (owner, viewer),
+    )
+    with psycopg.connect(to_psycopg_dsn(migrated_db), autocommit=True) as c:
+        _as_user(c, owner)
+        c.execute("insert into influencers (display_name) values ('X')")
+        c.execute(
+            "insert into social_channels (platform, external_id, access_basis) values ('telegram', '-1', 'public')"
+        )
+        c.execute("reset role")
+        _as_user(c, viewer)
+        assert c.execute("select count(*) from social_channels").fetchone()[0] == 1
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            c.execute("insert into influencers (display_name) values ('Y')")
+        c.execute("reset role")
+        _as_user(c, owner)
+        # Workers' private state is never readable from the browser roles.
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            c.execute("select * from worker_state")
