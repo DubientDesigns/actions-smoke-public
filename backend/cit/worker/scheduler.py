@@ -1,0 +1,80 @@
+"""Worker process: APScheduler running the ingestion schedule.
+
+Schedule (see docs/INGESTION.md for the rate-limit budget):
+  discover_new_pools       every 10 min   GeckoTerminal  4-8 calls/run
+  ingest_token_profiles    every 10 min   DEX Screener   1 call/run
+  refresh_tracked_markets  every 15 min   DEX Screener   <=10 calls/run (300 tokens / 30)
+  check_sources            every 5 min    database only
+  apply_retention          daily 03:15 SGT
+  daily_health_report      daily 08:00 SGT
+State lives in Postgres, so a restarted worker simply resumes the schedule.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import signal
+from datetime import UTC, datetime, timedelta
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+
+from cit.config import DISPLAY_TZ, get_settings
+from cit.db.engine import get_engine
+from cit.log import get_logger
+from cit.services import runs
+from cit.services.runtime import ProviderRuntime
+from cit.worker.jobs import run_job
+
+log = get_logger(__name__)
+
+
+def build_scheduler(rt: ProviderRuntime) -> AsyncIOScheduler:
+    sched = AsyncIOScheduler(
+        timezone=UTC, job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 300}
+    )
+    soon = datetime.now(UTC) + timedelta(seconds=15)
+
+    def add(name: str, trigger: object, first_run_delay_s: int | None = None) -> None:
+        kwargs = {}
+        if first_run_delay_s is not None:
+            kwargs["next_run_time"] = soon + timedelta(seconds=first_run_delay_s)
+        sched.add_job(run_job, trigger, args=[name, rt], id=name, name=name, **kwargs)
+
+    add("discover_new_pools", IntervalTrigger(minutes=10), 0)
+    add("ingest_token_profiles", IntervalTrigger(minutes=10), 120)
+    add("refresh_tracked_markets", IntervalTrigger(minutes=15), 240)
+    add("check_sources", IntervalTrigger(minutes=5), 60)
+    add("apply_retention", CronTrigger(hour=3, minute=15, timezone=DISPLAY_TZ))
+    add("daily_health_report", CronTrigger(hour=8, minute=0, timezone=DISPLAY_TZ))
+    sched.add_job(
+        _heartbeat, IntervalTrigger(minutes=1), args=[rt], id="worker_heartbeat", next_run_time=datetime.now(UTC)
+    )
+    sched.add_job(rt.reset_daily_counters, CronTrigger(hour=0, minute=0, timezone=UTC), id="reset_daily")
+    return sched
+
+
+async def _heartbeat(rt: ProviderRuntime) -> None:
+    try:
+        async with rt.engine.begin() as conn:
+            await runs.heartbeat(conn, "worker", "ok", "scheduler alive")
+    except Exception:
+        log.exception("worker_heartbeat_failed")
+
+
+async def run_worker() -> None:
+    settings = get_settings()
+    rt = ProviderRuntime(settings, get_engine())
+    sched = build_scheduler(rt)
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, stop.set)
+    sched.start()
+    log.info("worker_started", jobs=[j.id for j in sched.get_jobs()])
+    await stop.wait()
+    log.info("worker_stopping")
+    sched.shutdown(wait=False)
+    await rt.aclose()
+    await get_engine().dispose()

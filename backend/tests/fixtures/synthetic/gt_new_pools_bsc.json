@@ -1,0 +1,65 @@
+{
+  "data": [
+    {
+      "id": "bsc_0x1111111111111111111111111111111111111111",
+      "type": "pool",
+      "attributes": {
+        "base_token_price_usd": "0.000123456789",
+        "base_token_price_native_currency": "0.0000002",
+        "quote_token_price_usd": "600.1",
+        "address": "0x1111111111111111111111111111111111111111",
+        "name": "FOO / WBNB",
+        "pool_created_at": "2026-10-13T07:30:00Z",
+        "fdv_usd": "123456.78",
+        "market_cap_usd": null,
+        "price_change_percentage": {"m5": "1.5", "h1": "-3.2", "h6": "10", "h24": "10"},
+        "transactions": {
+          "m5": {"buys": 4, "sells": 2, "buyers": 3, "sellers": 2},
+          "h1": {"buys": 40, "sells": 22, "buyers": 30, "sellers": 20},
+          "h24": {"buys": 40, "sells": 22, "buyers": 30, "sellers": 20}
+        },
+        "volume_usd": {"m5": "512.3", "h1": "8000.1", "h6": "8000.1", "h24": "8000.1"},
+        "reserve_in_usd": "25000.55"
+      },
+      "relationships": {
+        "base_token": {"data": {"id": "bsc_0x2222222222222222222222222222222222222222", "type": "token"}},
+        "quote_token": {"data": {"id": "bsc_0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c", "type": "token"}},
+        "dex": {"data": {"id": "pancakeswap_v2", "type": "dex"}}
+      }
+    },
+    {
+      "id": "bsc_0x3333333333333333333333333333333333333333",
+      "type": "pool",
+      "attributes": {
+        "base_token_price_usd": "1.0",
+        "address": "0x3333333333333333333333333333333333333333",
+        "name": "BAR / USDT",
+        "pool_created_at": "2026-10-13T07:25:00Z",
+        "fdv_usd": "500000",
+        "market_cap_usd": "500000",
+        "price_change_percentage": {},
+        "transactions": {},
+        "volume_usd": {},
+        "reserve_in_usd": "not-a-number"
+      },
+      "relationships": {
+        "base_token": {"data": {"id": "bsc_0x4444444444444444444444444444444444444444", "type": "token"}},
+        "quote_token": {"data": {"id": "bsc_0x55d398326f99059ff775485246999027b3197955", "type": "token"}},
+        "dex": {"data": {"id": "pancakeswap_v3", "type": "dex"}}
+      }
+    },
+    {
+      "id": "bsc_garbage",
+      "type": "pool",
+      "attributes": {"address": "not-an-address"},
+      "relationships": {}
+    }
+  ],
+  "included": [
+    {"id": "bsc_0x2222222222222222222222222222222222222222", "type": "token",
+     "attributes": {"address": "0x2222222222222222222222222222222222222222", "name": "Foo Token", "symbol": "FOO", "decimals": 18}},
+    {"id": "bsc_0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c", "type": "token",
+     "attributes": {"address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "name": "Wrapped BNB", "symbol": "WBNB", "decimals": 18}},
+    {"id": "pancakeswap_v2", "type": "dex", "attributes": {"name": "PancakeSwap (v2)"}}
+  ]
+}

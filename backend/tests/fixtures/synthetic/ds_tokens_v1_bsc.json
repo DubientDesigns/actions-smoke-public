@@ -1,0 +1,44 @@
+[
+  {
+    "chainId": "bsc",
+    "dexId": "pancakeswap",
+    "url": "https://dexscreener.com/bsc/0x1111111111111111111111111111111111111111",
+    "pairAddress": "0x1111111111111111111111111111111111111111",
+    "labels": ["v2"],
+    "baseToken": {"address": "0x2222222222222222222222222222222222222222", "name": "Foo Token", "symbol": "FOO"},
+    "quoteToken": {"address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "name": "Wrapped BNB", "symbol": "WBNB"},
+    "priceNative": "0.00000021",
+    "priceUsd": "0.000126",
+    "txns": {"m5": {"buys": 5, "sells": 1}, "h1": {"buys": 50, "sells": 30}, "h6": {"buys": 50, "sells": 30}, "h24": {"buys": 50, "sells": 30}},
+    "volume": {"m5": 600, "h1": 9000, "h6": 9000, "h24": 9000},
+    "priceChange": {"m5": 2.1, "h1": -1.0, "h6": 12.0, "h24": 12.0},
+    "liquidity": {"usd": 26000.5, "base": 100000000, "quote": 21.5},
+    "fdv": 126000,
+    "marketCap": 126000,
+    "pairCreatedAt": 1791876600000,
+    "info": {
+      "imageUrl": "https://example.invalid/foo.png",
+      "websites": [{"label": "Website", "url": "https://foo.example"}],
+      "socials": [{"type": "twitter", "url": "https://x.com/foo"}, {"type": "telegram", "url": "https://t.me/foo"}, {"type": "evil", "url": "javascript:alert(1)"}]
+    }
+  },
+  {
+    "chainId": "bsc",
+    "dexId": "uniswap",
+    "pairAddress": "0x6666666666666666666666666666666666666666",
+    "baseToken": {"address": "0x2222222222222222222222222222222222222222", "name": "Foo Token", "symbol": "FOO"},
+    "quoteToken": {"address": "0x55d398326f99059ff775485246999027b3197955", "name": "Tether USD", "symbol": "USDT"},
+    "priceUsd": "0.000125",
+    "liquidity": {"usd": 4000},
+    "fdv": 125000,
+    "marketCap": 90000,
+    "pairCreatedAt": 1791877000000
+  },
+  {
+    "chainId": "arbitrum",
+    "dexId": "uniswap",
+    "pairAddress": "0x7777777777777777777777777777777777777777",
+    "baseToken": {"address": "0x8888888888888888888888888888888888888888"},
+    "quoteToken": {"address": "0x9999999999999999999999999999999999999999"}
+  }
+]

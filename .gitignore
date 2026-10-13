@@ -1,0 +1,26 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+secrets/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# local data
+backups/
+*.dump
+backend/tests/fixtures/live/*.json
