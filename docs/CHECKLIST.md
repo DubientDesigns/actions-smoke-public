@@ -42,12 +42,14 @@
 - [ ] Run `pytest -m live` GoPlus checks on the VPS
 
 ## Phase 4 — Social intelligence and presales
-- [ ] Source registry UI (`social_channels` with access basis)
-- [ ] Telegram bot ingestion (only chats where the bot is added); contract-address extraction; forwarded/original; referral-link capture
-- [ ] Manual mention entry; coordination groups
-- [ ] Mention outcomes (24h/7d/30d, max gain, max drawdown, exit feasibility), including failed/delisted tokens
-- [ ] Presale manual watchlist with per-claim provenance; presale scorecard; deadline tracking
-- [ ] Wallet watchlist via Alchemy/Helius free tiers
+- [x] Source registry UI (`social_channels` with access basis) + approval queue for chats that add the bot
+- [~] Telegram bot ingestion (registered chats only); contract extraction (EVM + 32-byte Solana mints, chain from URLs); forwarded/original; referral links; disclosure; category — live Bot API untested
+- [x] Manual mention entry; coordination groups; coordination signals (same token ≤30 min, shared referral link, identical text)
+- [x] Mention outcomes from post-publication prices only (24h/7d/30d, max gain, max drawdown, exit feasibility), incl. no_price/untradeable/delisted
+- [x] Independent mention count feeds the token scorecard (unknown when nothing is monitored)
+- [x] Presale manual watchlist with per-claim provenance; presale scorecard v1; status/verification updates
+- [~] Wallet watchlist via Alchemy (EVM) / Helius (Solana) free tiers — live APIs untested
+- [ ] Presale deadline alerts (Phase 5, Telegram)
 
 ## Phase 5 — AI reports, Telegram alerts, cost controls
 - [ ] Evidence bundle builder with provenance ids; untrusted-text isolation

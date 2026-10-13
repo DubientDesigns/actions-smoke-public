@@ -54,6 +54,31 @@ Point your domain's A record at the VPS; Caddy obtains TLS automatically
 | Restart | `docker compose -f infra/docker-compose.yml restart worker` |
 | Upgrade | `git pull && docker compose -f infra/docker-compose.yml up -d --build` (the `migrate` service runs first) |
 
+## 3a. Optional integrations
+
+### Telegram bot (social collection now, alerts in Phase 5)
+1. Create a bot with @BotFather → copy the token into `CIT_TELEGRAM_BOT_TOKEN` (.env).
+2. Enable the source: `update data_sources set enabled = true where slug = 'telegram_bot';`
+3. Add the bot to channels/groups **you are authorised to monitor**. Channels: make the
+   bot an admin (it then receives channel posts). Groups: either make it admin or disable
+   privacy mode in @BotFather (`/setprivacy` → Disable) so it sees messages.
+4. Within ~2 minutes the chat appears under *Influencer Intelligence → Chats waiting for
+   approval*. Nothing from that chat is stored until you approve it (optionally linking
+   it to an influencer). "Ignore" discards future messages from it.
+5. Only messages containing a contract address, a cashtag, or coming from an
+   official-project source are stored, as a ≤280-character excerpt.
+
+No user-account (MTProto/Telethon) reader exists. Telegram's 2026 terms prohibit
+scraping and AI use of platform data; adding one requires an explicit decision.
+
+### Wallet tracking (Alchemy + Helius free tiers)
+1. Create free accounts; put keys in `CIT_ALCHEMY_API_KEY` and `CIT_HELIUS_API_KEY`.
+2. Enable: `update data_sources set enabled = true where slug in ('alchemy', 'helius');`
+3. Add wallets on the *Wallet Watchlist* page. The first sync of an EVM wallet looks
+   back ~7 days; later syncs continue from the last block / signature seen.
+4. Alchemy BNB Chain support on the free tier is unverified; if `bnb-mainnet`
+   calls fail, BNB wallets show a sync error while other chains keep working.
+
 ## 4. Backups and restore
 
 The `backup` service writes `backups/cit-<UTC>.dump` nightly (03:00 SGT) and

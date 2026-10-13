@@ -2,6 +2,16 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 import type {
+  Channel,
+  ChatRequest,
+  CoordinationSignal,
+  InfluencerStats,
+  MentionDetail,
+  Presale,
+  PresaleClaim,
+  PresaleScore,
+  WalletEvent,
+  WalletOverview,
   DataSource,
   HealthRow,
   JobFreshness,
@@ -199,4 +209,67 @@ export async function listSavedViews(page: string): Promise<SavedView[]> {
 /** Request-time clock for staleness checks in server components (kept out of render bodies). */
 export function requestTime(): Date {
   return new Date();
+}
+
+export async function isOwner(): Promise<boolean> {
+  return (await getViewer()).role === "owner";
+}
+
+export async function listPresales(status?: string): Promise<(Presale & { score: PresaleScore | null })[]> {
+  const supabase = await createClient();
+  let q = supabase.from("presales").select("*");
+  if (status) q = q.eq("status", status);
+  const presales = check(await q.order("sale_start_at", { ascending: true, nullsFirst: false }).limit(200)) as Presale[];
+  const ids = presales.map((p) => p.id);
+  const scores = ids.length
+    ? (check(await supabase.from("v_presale_score_latest").select("*").in("presale_id", ids)) as PresaleScore[])
+    : [];
+  const byId = new Map(scores.map((s) => [s.presale_id, s]));
+  return presales.map((p) => ({ ...p, score: byId.get(p.id) ?? null }));
+}
+
+export async function getPresale(slug: string) {
+  const supabase = await createClient();
+  const presale = check(await supabase.from("presales").select("*").eq("slug", slug).maybeSingle()) as Presale | null;
+  if (!presale) return null;
+  const [claims, score] = await Promise.all([
+    supabase.from("presale_claims").select("*").eq("presale_id", presale.id).order("observed_at", { ascending: false }),
+    supabase.from("v_presale_score_latest").select("*").eq("presale_id", presale.id).maybeSingle(),
+  ]);
+  return { presale, claims: check(claims) as PresaleClaim[], score: check(score) as PresaleScore | null };
+}
+
+export async function listInfluencerStats(): Promise<InfluencerStats[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_influencer_stats").select("*").order("projects", { ascending: false }));
+}
+
+export async function listMentions(limit = 100): Promise<MentionDetail[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_mention_detail").select("*").order("published_at", { ascending: false }).limit(limit));
+}
+
+export async function listCoordination(): Promise<CoordinationSignal[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_coordination_signals").select("*").order("first_at", { ascending: false }).limit(50));
+}
+
+export async function listChannels(): Promise<Channel[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("social_channels").select("*").order("created_at", { ascending: false }));
+}
+
+export async function listChatRequests(): Promise<ChatRequest[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("social_chat_requests").select("*").eq("status", "pending").order("last_seen_at", { ascending: false }));
+}
+
+export async function listWallets(): Promise<WalletOverview[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_wallet_overview").select("*").order("created_at", { ascending: false }));
+}
+
+export async function listWalletEvents(limit = 100): Promise<WalletEvent[]> {
+  const supabase = await createClient();
+  return check(await supabase.from("v_wallet_events").select("*").order("block_time", { ascending: false }).limit(limit));
 }
