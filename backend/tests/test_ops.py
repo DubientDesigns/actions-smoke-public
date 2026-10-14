@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+import respx
+
 from cit.services import ops
 
 NOW = datetime(2026, 10, 13, tzinfo=UTC)
@@ -85,3 +87,44 @@ async def test_prune_removes_only_unreferenced_illiquid_old_tokens(engine, clean
     assert res["pruned_tokens"] == 1
     left = {r[0] for r in clean_db.execute("select id from tokens").fetchall()}
     assert left == {liquid, fresh, evaluated} and junk not in left
+
+
+async def test_restart_recovery_closes_abandoned_runs_and_reports(engine, clean_db):
+    from cit.services import ops
+
+    tid = clean_db.execute("insert into tokens (chain_id, address) values (1, '0x" + "e" * 40 + "') "
+                           "returning id").fetchone()[0]
+    clean_db.execute("insert into ingestion_runs (source_id, job_name, status, started_at) "
+                     "values (1, 'discover_new_pools', 'running', now() - interval '2 hours')")
+    clean_db.execute("insert into ingestion_runs (source_id, job_name, status, started_at) "
+                     "values (1, 'discover_new_pools', 'running', now())")
+    clean_db.execute("insert into research_reports (token_id, status, prompt_version, input_hash, evidence, "
+                     "created_at) "
+                     "values (%s, 'generating', 'v', 'h1', '{}', now() - interval '2 hours'), "
+                     "(%s, 'generating', 'v', 'h2', '{}', now())", (tid, tid))
+    await ops.check_sources(engine)
+    runs_ = clean_db.execute("select status from ingestion_runs order by id").fetchall()
+    assert [r[0] for r in runs_] == ["failed", "running"]  # only the stale one is closed
+    reports = clean_db.execute("select status, error from research_reports order by id").fetchall()
+    assert reports[0][0] == "failed" and reports[0][1].startswith("abandoned") and reports[1][0] == "generating"
+
+
+@respx.mock
+async def test_dead_mans_switch_ping(engine, clean_db):
+    import httpx
+    from pydantic import SecretStr
+
+    from cit.config import Settings
+    from cit.services.runtime import ProviderRuntime
+    from cit.worker import scheduler
+
+    rt = ProviderRuntime(Settings(), engine, http=httpx.AsyncClient())
+    assert await scheduler.ping_dead_mans_switch(rt) is False  # not configured: no request
+    route = respx.get("https://hc-ping.example/abc").mock(return_value=httpx.Response(200))
+    rt = ProviderRuntime(Settings(healthcheck_ping_url=SecretStr("https://hc-ping.example/abc")), engine,
+                         http=httpx.AsyncClient())
+    await scheduler._heartbeat(rt)
+    assert route.called
+    assert clean_db.execute("select status from system_health where component = 'worker'").fetchone()[0] == "ok"
+    respx.get("https://hc-ping.example/abc").mock(side_effect=httpx.ConnectError("down"))
+    assert await scheduler.ping_dead_mans_switch(rt) is False  # failure is swallowed

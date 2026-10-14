@@ -87,6 +87,26 @@ async def _heartbeat(rt: ProviderRuntime) -> None:
             await runs.heartbeat(conn, "worker", "ok", "scheduler alive")
     except Exception:
         log.exception("worker_heartbeat_failed")
+        return
+    await ping_dead_mans_switch(rt)
+
+
+async def ping_dead_mans_switch(rt: ProviderRuntime) -> bool:
+    """Optional external monitor (e.g. a free healthchecks.io check).
+
+    Pinged only after the database heartbeat succeeded, so the external service
+    alerts when the VPS, the worker or the database is down: the one failure the
+    in-app Telegram alerts cannot report themselves.
+    """
+    url = rt.settings.healthcheck_ping_url
+    if url is None or not url.get_secret_value():
+        return False
+    try:
+        r = await rt.http.get(url.get_secret_value(), timeout=10)
+        return r.status_code < 400
+    except Exception as exc:  # never let monitoring break the worker; never log the URL (it is a secret)
+        log.warning("healthcheck_ping_failed", error=type(exc).__name__)
+        return False
 
 
 async def run_worker() -> None:

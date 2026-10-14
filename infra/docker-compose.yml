@@ -5,6 +5,7 @@
 #   api    internal FastAPI (NOT published)
 #   worker scheduler running ingestion jobs (no ports)
 #   backup nightly pg_dump of the Supabase database to ./backups
+#   offsite (optional profile) daily copy of ./backups to object storage
 #
 # The database is Supabase-hosted. For local development, enable the `localdb`
 # profile to run Postgres 16 in a container instead.
@@ -97,6 +98,23 @@ services:
       - ./backup:/backup:ro
       - ../backups:/backups
     networks: [internal]
+    logging: *logging
+
+  # Off-site copies of ./backups (enable with: --profile offsite). Free tiers of
+  # Cloudflare R2 / Backblaze B2 are enough; see docs/DEPLOY.md.
+  offsite:
+    profiles: ["offsite"]
+    image: rclone/rclone:1.68.2
+    restart: unless-stopped
+    env_file: ../.env
+    entrypoint: ["/bin/sh", "/offsite/offsite-loop.sh"]
+    volumes:
+      - ./offsite:/offsite:ro
+      - ../backups:/backups:ro
+    networks: [internal]
+    read_only: true
+    tmpfs: [/tmp, /config]
+    security_opt: ["no-new-privileges:true"]
     logging: *logging
 
   db:

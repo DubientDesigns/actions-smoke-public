@@ -24,3 +24,7 @@ next-env.d.ts
 backups/
 *.dump
 backend/tests/fixtures/live/*.json
+
+# playwright
+web/test-results/
+web/playwright-report/

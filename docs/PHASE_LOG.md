@@ -1,5 +1,54 @@
 # Phase log
 
+## Phase 7 (part 1: tooling) — 2026-10-14
+
+Everything that can be built and proven without your server and keys. Part 2 is running it on
+the VPS (docs/DEPLOY.md) and recording the results here.
+
+### What was built
+* `scripts/vps_bootstrap.sh`: Docker, firewall (80/443 public, SSH restricted to `ADMIN_IP` or
+  rate-limited), key-only SSH with a lockout guard, unattended security upgrades, fail2ban,
+  swap, bounded Docker logs.
+* `scripts/preflight.sh`: `.env` checks: permissions, placeholders, token length, DB driver and
+  pooler settings, **service-role/secret keys in `NEXT_PUBLIC_` variables**, DNS.
+* `scripts/smoke.sh`: post-deploy checks: containers, internal health/readiness, HTTPS, HTTP→HTTPS,
+  security headers, login gate, internal API not public, no unexpected open ports.
+* `scripts/verify_live.sh`: captures real provider responses and runs `pytest -m live` in a
+  throwaway container (closes the Phase 2–4 verification gap once run on the VPS).
+* `scripts/restore_drill.sh` + `offsite` compose profile (rclone → R2/B2) for off-site backups.
+* Restart recovery: AI reports interrupted mid-call are closed as `failed (abandoned)` like
+  ingestion runs, so nothing stays "generating" forever.
+* Dead-man's switch: optional `CIT_HEALTHCHECK_PING_URL`, pinged only after a successful DB
+  heartbeat, so an outside service tells you when the server, worker or DB is down.
+* Playwright smoke suite (desktop + Pixel 7), in CI against the standalone server; against
+  production it also checks HTTPS headers and, with a test login, walks every page.
+* docs/DEPLOY.md (step by step), docs/ACCEPTANCE.md (requirement → how to confirm).
+
+### Tests run
+* Backend **134 passed** (11 live deselected): adds restart recovery (only stale runs/reports
+  closed) and the dead-man's-switch ping (not sent unconfigured, sent after heartbeat,
+  failures swallowed and URL never logged).
+* Web: lint, typecheck, 18 Vitest, `next build`, **8 Playwright tests passed** (4 production-only
+  skipped), `npm audit` 0 vulnerabilities.
+* Scripts: preflight run against a good and a deliberately bad `.env` (caught 644 permissions,
+  short token, service-role key as anon key); restore drill run against a real `pg_dump` of the
+  test database in Docker; compose file validated with the new profile.
+
+### Failures found and fixed
+* **Backups did not fully restore:** dumps of `public`/`cit_meta` omit extensions, so restoring
+  into a fresh database silently skipped `app_users` (citext) and its policies. Restore steps
+  now create the extensions first and the drill fails on any unexpected error.
+* Interrupted AI reports stayed `generating` indefinitely → closed after 30 min.
+* Preflight always printed "with warnings" → only when there are warnings.
+
+### Limitations (honest)
+1. Nothing has run on a real VPS yet: hardening, TLS, smoke, live provider checks, restart and
+   restore drills and the production Playwright run are pending your server.
+2. Supabase `auth` users are not in our dumps (Supabase manages them); after a total project
+   loss, recreate users and `app_users` rows.
+3. The firewall rules assume Docker publishes only Caddy's 80/443 (true for this compose file);
+   Docker-published ports bypass ufw, so do not add `ports:` to other services.
+
 ## Phase 6 — 2026-10-13
 
 Paper trading and forward performance. Simulation only: no wallets, keys, signing,

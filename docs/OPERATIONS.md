@@ -1,5 +1,7 @@
 # Operations runbook
 
+First deployment: follow [DEPLOY.md](DEPLOY.md) (step by step). This runbook is the reference.
+
 ## 1. Supabase project (one-time)
 
 1. Create a project (free tier). Region close to Singapore.
@@ -52,7 +54,10 @@ Point your domain's A record at the VPS; Caddy obtains TLS automatically
 | Change settings | `update app_settings set value = jsonb_set(value, '{max_tracked_tokens}', '200') where key = 'discovery';` (validated on read; invalid values fall back to defaults and are logged) |
 | Disable a source | `update data_sources set enabled = false where slug = '...';` |
 | Restart | `docker compose -f infra/docker-compose.yml restart worker` |
-| Upgrade | `git pull && docker compose -f infra/docker-compose.yml up -d --build` (the `migrate` service runs first) |
+| Upgrade | `git pull && docker compose -f infra/docker-compose.yml up -d --build && bash scripts/smoke.sh` (the `migrate` service runs first) |
+| Post-deploy check | `bash scripts/smoke.sh` |
+| Config check | `bash scripts/preflight.sh` |
+| Restore rehearsal | `bash scripts/restore_drill.sh` |
 
 ## 3a. Optional integrations
 
@@ -110,10 +115,16 @@ The `backup` service writes `backups/cit-<UTC>.dump` nightly (03:00 SGT) and
 keeps 14 days. **Copy them off the VPS**, for example with rclone to
 Cloudflare R2 / Backblaze B2 (free tiers) from a cron job.
 
-Restore into a fresh database:
+Restore into a fresh Supabase project (the dump holds the `public` and `cit_meta`
+schemas but **not extensions**; without `citext` the `app_users` table is silently lost):
 ```bash
-pg_restore --no-owner --no-privileges --clean --if-exists -d "$TARGET_DSN" backups/cit-YYYYMMDDTHHMMSSZ.dump
+psql "$TARGET_DSN" -c "create extension if not exists citext with schema public; create extension if not exists pgcrypto;"
+pg_restore --no-owner --no-privileges -d "$TARGET_DSN" backups/cit-YYYYMMDDTHHMMSSZ.dump
 ```
+Only the error `schema "public" already exists` is expected; anything else means the
+restore is incomplete. `scripts/restore_drill.sh` rehearses exactly this in a throwaway
+container and fails on any other error; run it monthly. Off-site copies: the optional
+`offsite` compose profile (see [DEPLOY.md §9](DEPLOY.md#9-off-site-backups-recommended-free)).
 Supabase's `auth` schema is not included in these dumps (it is managed by
 Supabase); recreate users and the `app_users` rows after a full project loss.
 

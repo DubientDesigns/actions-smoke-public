@@ -70,8 +70,11 @@
 - [x] Paper Portfolio and Historical Performance pages; paper buy on token pages, allocation on open presales
 
 ## Phase 7 — Testing, deployment, monitoring
-- [ ] Provision VPS; firewall (22 restricted, 80/443 only); unattended upgrades
-- [ ] Deploy stack; verify restart recovery (kill worker mid-run → run closed, schedule resumes)
-- [ ] Playwright smoke tests (desktop + mobile) against production
-- [ ] Off-box backups + restore drill
-- [ ] Acceptance criteria walkthrough (README §16 of the brief)
+- [~] VPS hardening script (firewall 80/443 + restricted SSH, key-only SSH with lockout guard, unattended upgrades, fail2ban, swap); run on your VPS
+- [~] Config preflight (placeholders, token length, service-role key in browser vars, DNS) and post-deploy smoke script; run on your VPS
+- [x] Restart recovery: abandoned ingestion runs and AI reports closed automatically (tested); [~] live drill on VPS
+- [x] Playwright smoke tests, desktop + mobile, in CI; [~] same suite + signed-in walkthrough against production
+- [x] Restore drill script (verified locally: found and fixed the missing-extension restore bug); [~] off-site copies via rclone profile on VPS
+- [x] Dead-man's switch ping (healthchecks.io) after a healthy DB heartbeat (tested)
+- [~] Live provider verification (`scripts/verify_live.sh`) on the VPS
+- [~] Acceptance walkthrough: docs/ACCEPTANCE.md

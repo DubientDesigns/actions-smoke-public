@@ -49,6 +49,14 @@ async def check_sources(engine: AsyncEngine) -> dict[str, str]:
             where status = 'running' and started_at < now() - interval '30 minutes'
         """)
         )
+        # Same for AI reports interrupted mid-call (they would otherwise show 'generating' forever).
+        await conn.execute(
+            text("""
+            update research_reports set status = 'failed', completed_at = now(),
+              error = coalesce(error, 'abandoned: worker stopped before the report finished')
+            where status = 'generating' and created_at < now() - interval '30 minutes'
+        """)
+        )
     return out
 
 
