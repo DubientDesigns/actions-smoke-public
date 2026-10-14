@@ -52,5 +52,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Browser smoke tests (desktop + mobile)
+        run: npx playwright install --with-deps chromium && npm run e2e
       - name: Dependency audit
         run: npm audit --omit=dev --audit-level=high

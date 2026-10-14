@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     # Public dashboard URL, used to turn app paths in alerts into links (e.g. https://cit.example.com).
     public_url: str | None = None
 
+    # Optional dead-man's switch: pinged every minute after a successful DB heartbeat
+    # (e.g. https://hc-ping.com/<uuid>). Treated as a secret: anyone with it can ping.
+    healthcheck_ping_url: SecretStr | None = None
+
     # Scheduler master switch (lets the API container run without jobs).
     scheduler_enabled: bool = True
 

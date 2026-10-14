@@ -18,7 +18,7 @@ paper-tracks early-stage tokens on **BNB Chain, Ethereum, Solana and Base**.
 | 4 | Social intelligence, presale watchlists, wallets | **Built; Telegram/Alchemy/Helius untested against live APIs (need your keys)** |
 | 5 | AI reports, Telegram alerts, cost controls | **Built; Claude/Telegram delivery untested against live APIs (need your keys)** |
 | 6 | Paper portfolio, forward performance | **Built** (database-only; no external APIs) |
-| 7 | Testing, production deployment, monitoring | Next |
+| 7 | Testing, production deployment, monitoring | **Tooling built; deployment on your VPS pending** ([docs/DEPLOY.md](docs/DEPLOY.md)) |
 
 ## Layout
 
@@ -32,7 +32,7 @@ backend/            Python 3.12 workers + internal FastAPI (package `cit`)
 db/migrations/      SQL migrations — single source of truth for the schema
 web/                Next.js 16 dashboard (Supabase auth + RLS)
 infra/              docker-compose, Caddy, backup loop
-scripts/            capture_fixtures.sh (real provider responses for verification)
+scripts/            vps_bootstrap, preflight, smoke, verify_live, restore_drill, capture_fixtures
 docs/               architecture, research, budgets, risks, operations, phase log
 ```
 
@@ -47,13 +47,13 @@ uv run cit migrate --local-bootstrap   # --local-bootstrap only on plain Postgre
 uv run cit seed-settings
 uv run cit run-job discover_new_pools  # one-off run
 uv run cit worker                       # full schedule
-uv run pytest                           # 132 tests; `pytest -m live` for real-provider checks
+uv run pytest                           # 134 tests; `pytest -m live` for real-provider checks
 
 cd ../web
 npm ci && npm run dev
 ```
 
-Production deployment: [docs/OPERATIONS.md](docs/OPERATIONS.md).
+Production deployment: [docs/DEPLOY.md](docs/DEPLOY.md) (step by step), then [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
 ## Documentation
 
