@@ -24,12 +24,17 @@ live in `data_sources` and can be changed without a deploy.
 | `dispatch_alerts` | 1 min | Telegram Bot `sendMessage` | ≤ 12/hour (critical exempt) | ≤ ~300 | quiet hours 23:00–07:30 SGT |
 | `daily_health_report` | 08:00 SGT | Telegram Bot `sendMessage` | 1–2 | 1–2 | digest + health report |
 | `generate_research_reports` | hourly (:20) | Claude Messages API (`claude-haiku-5-5`) | ≤ 5 | ≤ 20 (cap) | daily request/token caps, US$10/month hard cap |
+| `paper_cycle` | 2 min | — (database) | 0 | 0 | fills due orders, marks positions, stop-loss/take-profit/max-hold |
+| `evaluate_strategies` | 15 min | — (database) | 0 | 0 | each new stored score evaluated once per active strategy version |
+| `record_equity_marks` | hourly (:05) | — (database) | 0 | 0 | equity at liquidation value |
 
 **Tracked set.** A token is refreshed while it is ≤ 14 days old and its best
 pool has ≥ US$2,000 liquidity (or is unknown yet), or it is on any watchlist,
 capped at 300 tokens (watchlist first, then deepest liquidity). All three
 values are in `app_settings.discovery`. Tokens mentioned by a monitored source in the
-last 35 days are always tracked, so mention outcomes have prices.
+last 35 days are always tracked, so mention outcomes have prices. Tokens in open
+paper positions or pending paper orders are always tracked (even if later excluded),
+so they can be marked and filled.
 
 ## Coverage and latency — honest limits
 

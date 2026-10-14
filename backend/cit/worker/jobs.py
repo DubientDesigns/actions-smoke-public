@@ -9,6 +9,7 @@ from typing import Any
 from cit.ai import research
 from cit.alerts import dispatch, engine
 from cit.log import get_logger
+from cit.paper import service as paper
 from cit.services import discovery, ops, presales, runs, scoring, security, social, wallets
 from cit.services.runtime import ProviderRuntime
 
@@ -33,6 +34,9 @@ JOBS: dict[str, JobFn] = {
     "generate_alerts": lambda rt: engine.generate_alerts(rt.engine),
     "dispatch_alerts": dispatch.dispatch_alerts,
     "generate_research_reports": research.generate_research_reports,
+    "paper_cycle": lambda rt: paper.paper_cycle(rt.engine),
+    "evaluate_strategies": lambda rt: paper.strategy_cycle(rt.engine),
+    "record_equity_marks": lambda rt: paper.equity_cycle(rt.engine),
     # Daily digest: deferred alerts + the operational health report (stored even without Telegram).
     "daily_health_report": dispatch.send_daily_digest,
 }

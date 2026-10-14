@@ -1,5 +1,79 @@
 # Phase log
 
+## Phase 6 — 2026-10-13
+
+Paper trading and forward performance. Simulation only: no wallets, keys, signing,
+swaps or real execution exist anywhere in the code.
+
+### What was built
+* **Execution model** (`cit/paper/execution.py`, pure): constant-product price impact
+  on the quote reserve (liquidity/2), 30 bps fee per side, 50 bps extra slippage, buys
+  above 2% of pool liquidity rejected, sells partially filled up to that cap, pools
+  below US$10k or without price untradeable. Marks use **liquidation value** (one
+  hypothetical full sell incl. impact and fees), not the displayed price.
+* **Order lifecycle** (`cit/paper/service.py`): `signal_at` → `earliest_fill_at`
+  (+60 s) → fill with the first snapshot observed at/after it (deepest pool, or the
+  position's pool for sells) → `expires_at` (+30 min) → `expired`, recorded as a
+  `missed` strategy evaluation. The DB trigger still rejects any earlier price.
+* **Rules:** stop-loss, staged take-profits (in order, each once), max hold; signalled
+  at the observation time of the triggering snapshot and filled under the same delay;
+  `paper_rule` alerts (low severity → digest only).
+* **Strategies:** versioned and immutable (trigger); every new stored score of a
+  token is evaluated once per active version; evaluations are append-only (trigger)
+  and store exact inputs + hash; seed `baseline v1` with its own S$10,000 portfolio.
+* **Presales:** allocations only while the sale is `upcoming`/`live`, at the recorded
+  sale price; vesting (TGE %, cliff, linear months) keeps tokens locked; unknown
+  schedule ⇒ nothing unlocked; locked tokens are valued at zero.
+* **Metrics view** `v_paper_performance`: return, max drawdown, win rate and profit
+  factor (closed positions only), avg MFE/MAE, hold time, slippage, filled/rejected/
+  expired orders, enter/reject/missed evaluations.
+* **Internal API:** `POST /v1/paper/orders` (buy / presale / sell) and
+  `POST /v1/paper/orders/{id}/cancel`, bearer token, owner's manual portfolio, audit log.
+* **Web:** Paper Portfolio (equity, positions incl. untradeable/vesting, all orders with
+  reasons, sell/cancel for owners), Historical Performance (metrics table, equity and
+  drawdown charts, strategy versions, evaluation log); paper buy card on token pages,
+  allocation card on open presales.
+* Tokens held on paper stay in the tracked set so they keep getting prices.
+
+### Tests run
+* Backend **132 passed** (11 live deselected); ruff clean. New: execution math (fees,
+  impact, extra slippage, size cap, unknown/low liquidity, partial sells, round-trip
+  loss, conservative liquidation value); vesting (cliff, linear, unknown ⇒ locked);
+  strategy rules (each rule rejects, unknown never passes, reproducible hash);
+  service against Postgres: fill uses first price after the delay and never the
+  signal-time price, DB look-ahead trigger, expiry ⇒ `missed`, cash/liquidity
+  rejections, partial sell + realised P&L, untradeable on drained pool and on 72 h
+  without price, stop-loss signal/fill timing and no re-trigger, take-profit legs in
+  order, immutability and append-only triggers, end-to-end strategy evaluation with
+  replay of stored inputs, equity marks + performance view, presale vesting and
+  closed-sale rejection, internal API (auth, 404/422, owner-scoped cancel, audit),
+  held tokens stay tracked.
+* Web: lint, typecheck, **18 Vitest tests** (adds paper order parsing and drawdown),
+  `next build`.
+
+### Failures found and fixed
+* Strategy candidate query referenced a non-existent `v_score_latest.id` → `score_id`.
+* Fully vested presale positions skipped the liquidity check → uses the new status.
+* Paper-held tokens could drop out of the tracked set after 14 days (or on exclusion)
+  and be wrongly marked untradeable → always tracked while held.
+
+### Limitations (honest)
+1. The impact model assumes full-range liquidity; concentrated-liquidity pools can be
+   much thinner near the price, so results are optimistic there (mitigated by the 2%
+   cap and extra slippage, not eliminated).
+2. Fill prices are our ~15-minute market snapshots, not on-chain execution; between
+   snapshots an order waits (up to 30 min, then it is recorded as missed).
+3. SGD figures use an operator-maintained reference rate (`budget.sgd_per_usd`).
+4. Strategy `baseline v1` is a heuristic benchmark; forward results need weeks of data
+   before they mean anything.
+5. Token buy/sell taxes are not deducted from paper fills; GoPlus-reported taxes only
+   affect eligibility (security policy thresholds), so taxed tokens look better on paper.
+
+### Next: Phase 7 — testing, deployment, monitoring
+VPS provisioning and hardening, deploy, restart-recovery drill, live provider fixture
+capture and `pytest -m live`, Playwright smoke tests (desktop + mobile), off-box
+backups + restore drill, acceptance walkthrough. Needs your VPS and keys.
+
 ## Phase 5 — 2026-10-13
 
 Operator-approved defaults: Claude Haiku 5.5, hard cap US$10/month, ≤ 20 reports/day;

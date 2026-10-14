@@ -144,12 +144,18 @@ with best as (
   union
   -- Mentioned tokens stay tracked so forward performance can be measured.
   select token_id from social_mentions where token_id is not null and published_at > now() - interval '35 days'
+  union
+  -- Paper positions and pending paper orders need prices to be marked/filled, even if later excluded.
+  select token_id from paper_positions where token_id is not null and status <> 'closed'
+  union
+  select token_id from paper_orders where token_id is not null and status = 'pending'
 )
 select t.id, t.chain_id, t.address, (w.token_id is not null) as watched, b.liq
 from tokens t
 left join best b on b.token_id = t.id
 left join watched w on w.token_id = t.id
-where not t.is_quote_asset and not t.is_excluded and t.chain_id = any(:chains)
+where not t.is_quote_asset and t.chain_id = any(:chains)
+  and (not t.is_excluded or w.token_id is not null)
   and (
     w.token_id is not null
     or (t.first_observed_at >= now() - make_interval(days => :track_days)

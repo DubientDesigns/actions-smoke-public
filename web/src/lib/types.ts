@@ -389,3 +389,155 @@ export type AlertRow = {
 };
 
 export type SpendRow = { source: string; month: string; calls: number; input_tokens: number; output_tokens: number; cost_usd: N };
+
+// Paper trading (simulation only).
+export type PaperPortfolio = {
+  id: number;
+  name: string;
+  owner_id: string | null;
+  strategy_id: number | null;
+  strategy_slug: string | null;
+  strategy_version: number | null;
+  base_currency: string;
+  starting_capital: N;
+  starting_capital_usd: N;
+  fx_sgd_per_usd: N;
+  fee_bps: N;
+  execution_delay_seconds: number;
+  max_pool_liquidity_pct: N;
+  min_liquidity_usd: N;
+  is_active: boolean;
+  created_at: string;
+  cash_usd: N;
+  fees_usd: N;
+  positions_value_usd: N;
+  equity_usd: N;
+  realised_pnl_usd: N;
+  open_positions: number;
+  closed_positions: number;
+  untradeable_positions: number;
+};
+
+export type PaperPosition = {
+  id: number;
+  portfolio_id: number;
+  token_id: number | null;
+  presale_id: number | null;
+  chain: string | null;
+  address: string | null;
+  symbol: string | null;
+  presale_name: string | null;
+  status: string;
+  opened_at: string | null;
+  closed_at: string | null;
+  quantity: N;
+  locked_quantity: N;
+  cost_basis_usd: N;
+  realised_pnl_usd: N;
+  entry_price_usd: N;
+  last_price_usd: N;
+  last_value_usd: N;
+  last_marked_at: string | null;
+  unrealised_pnl_usd: N;
+  stop_loss_pct: N;
+  take_profit: { gain_pct: number; sell_pct: number }[] | null;
+  max_favourable_pct: N;
+  max_adverse_pct: N;
+  untradeable_reason: string | null;
+};
+
+export type PaperOrder = {
+  id: number;
+  portfolio_id: number;
+  position_id: number | null;
+  chain: string | null;
+  address: string | null;
+  symbol: string | null;
+  presale_name: string | null;
+  side: "buy" | "sell";
+  order_type: string;
+  origin: "manual" | "strategy";
+  signal_at: string;
+  earliest_fill_at: string;
+  expires_at: string | null;
+  requested_notional_usd: N;
+  sell_fraction: N;
+  status: string;
+  reject_reason: string | null;
+  note: string | null;
+  created_at: string;
+  filled_at: string | null;
+  price_observed_at: string | null;
+  reference_price_usd: N;
+  executed_price_usd: N;
+  filled_quantity: N;
+  filled_notional_usd: N;
+  fee_usd: N;
+  slippage_bps: N;
+};
+
+export type EquityMark = { portfolio_id: number; marked_at: string; cash_usd: N; positions_value_usd: N; equity_usd: N; equity_sgd: N };
+
+export type PaperPerformance = {
+  portfolio_id: number;
+  name: string;
+  strategy_slug: string | null;
+  strategy_version: number | null;
+  starting_capital_usd: N;
+  equity_usd: N;
+  return_pct: N;
+  realised_pnl_usd: N;
+  fees_usd: N;
+  open_positions: number;
+  untradeable_positions: number;
+  max_drawdown_pct: N;
+  equity_marks: number | null;
+  first_mark_at: string | null;
+  last_mark_at: string | null;
+  closed_positions: number;
+  wins: number;
+  losses: number;
+  win_rate_pct: N;
+  gross_profit_usd: N;
+  gross_loss_usd: N;
+  profit_factor: N;
+  avg_mfe_pct: N;
+  avg_mae_pct: N;
+  avg_hold_hours: N;
+  orders: number;
+  orders_filled: number;
+  orders_rejected: number;
+  orders_expired: number;
+  avg_slippage_bps: N;
+  evaluations: number;
+  evaluations_enter: number;
+  evaluations_reject: number;
+  evaluations_missed: number;
+};
+
+export type StrategyEvaluation = {
+  id: number;
+  strategy_id: number;
+  slug: string;
+  version: number;
+  token_id: number | null;
+  chain: string | null;
+  address: string | null;
+  symbol: string | null;
+  evaluated_at: string;
+  data_cutoff_at: string;
+  decision: string;
+  reasons: string[];
+  inputs_hash: string;
+};
+
+export type StrategyDefinition = {
+  id: number;
+  slug: string;
+  version: number;
+  name: string;
+  description: string | null;
+  rules: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+};

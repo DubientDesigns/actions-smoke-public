@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ChainBadge, PageHeader } from "@/components/data-display";
 import { str } from "@/components/filters";
-import { Field, fieldCls, FormError, Options, Submit } from "@/components/form";
+import { Field, fieldCls, FormError, FormNotice, Options, Submit } from "@/components/form";
+import { PresaleAllocationCard } from "@/components/paper";
 import { Guarded } from "@/components/guard";
 import { VerificationBadge } from "@/components/presale";
 import { ScoreBreakdown } from "@/components/security";
@@ -63,6 +64,7 @@ async function PresaleDetail({
         }
       />
       <FormError error={str(sp.error)} />
+      <FormNotice notice={str(sp.notice)} />
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader title="Sale details (claimed)" subtitle={`Added by ${p.created_by} · ${formatSgt(p.created_at)}`} />
@@ -121,6 +123,9 @@ async function PresaleDetail({
           </form>
         ) : null}
       </Card>
+      {owner && (p.status === "upcoming" || p.status === "live") && p.sale_price_usd !== null ? (
+        <PresaleAllocationCard presaleId={p.id} back={`/presales/${p.slug}`} />
+      ) : null}
       {owner ? (
         <Card className="mt-4">
           <CardHeader title="Update status" />
